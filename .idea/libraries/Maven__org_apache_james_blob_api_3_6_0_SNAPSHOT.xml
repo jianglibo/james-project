@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.apache.james:blob-api:3.6.0-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/server/blob/blob-api/pom.xml!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$PROJECT_DIR$/server/blob/blob-api/blob-api-3.6.0-SNAPSHOT-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/server/blob/blob-api/blob-api-3.6.0-SNAPSHOT-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

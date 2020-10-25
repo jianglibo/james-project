@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.apache.james:metrics-tests:3.6.0-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/metrics/metrics-tests/pom.xml!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$PROJECT_DIR$/metrics/metrics-tests/metrics-tests-3.6.0-SNAPSHOT-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/metrics/metrics-tests/metrics-tests-3.6.0-SNAPSHOT-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

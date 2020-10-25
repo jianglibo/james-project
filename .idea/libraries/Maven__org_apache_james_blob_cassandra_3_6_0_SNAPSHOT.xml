@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.apache.james:blob-cassandra:3.6.0-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/server/blob/blob-cassandra/pom.xml!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$PROJECT_DIR$/server/blob/blob-cassandra/blob-cassandra-3.6.0-SNAPSHOT-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/server/blob/blob-cassandra/blob-cassandra-3.6.0-SNAPSHOT-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

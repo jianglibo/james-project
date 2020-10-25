@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.apache.james:apache-james-mailbox-api:3.6.0-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/mailbox/api/pom.xml!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$PROJECT_DIR$/mailbox/api/apache-james-mailbox-api-3.6.0-SNAPSHOT-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/mailbox/api/apache-james-mailbox-api-3.6.0-SNAPSHOT-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

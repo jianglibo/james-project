@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.apache.james:james-server-queue-api:test-jar:tests:3.6.0-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/server/queue/queue-api/pom.xml!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$PROJECT_DIR$/server/queue/queue-api/james-server-queue-api-3.6.0-SNAPSHOT-test-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/server/queue/queue-api/james-server-queue-api-3.6.0-SNAPSHOT-test-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

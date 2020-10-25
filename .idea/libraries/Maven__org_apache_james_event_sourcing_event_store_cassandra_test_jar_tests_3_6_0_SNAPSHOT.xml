@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.apache.james:event-sourcing-event-store-cassandra:test-jar:tests:3.6.0-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/event-sourcing/event-store-cassandra/pom.xml!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$PROJECT_DIR$/event-sourcing/event-store-cassandra/event-sourcing-event-store-cassandra-3.6.0-SNAPSHOT-test-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/event-sourcing/event-store-cassandra/event-sourcing-event-store-cassandra-3.6.0-SNAPSHOT-test-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

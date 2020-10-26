@@ -1,0 +1,119 @@
+---
+- name: install james mail server in target server.
+  gather_facts: false
+  hosts: localhost
+  # vars_files:
+  #   - config.cfg
+  #   - vars/sec.yml
+  # ansible-playbook --vault-id james@/opt/james.pwd  install-mail-server.yml 
+  vars:
+    mail_ssl_secret: !vault |
+          $ANSIBLE_VAULT;1.2;AES256;james
+          62313637353138313962633931646333306633666634313630323234396231363737383865316162
+          6464646663323137366232666261346232613637303631360a353061303932653239616462626432
+          63316232623139333933306533313931613465636632656230306466383265306162346434653138
+          3530616237333735390a353130303962663231373038383831373234396131343038653162666436
+          61376532323738343637383630643932613134323566633864613532636163353330
+  tasks:
+    - name: Set python3 as the interpreter to use
+      set_fact:
+        ansible_python_interpreter: /usr/bin/python
+    - name: what's ansible_python_interpreter?
+      debug:
+        var: ansible_python_interpreter
+    - name: install pip
+      apt:
+        pkg:
+          - python-pip
+          - expect
+    - name: Install pexpect python package
+      pip:
+        name: pexpect
+    - name: change port to 465
+      lineinfile:
+        path: ansible-fixture/smtpserver.xml
+        regexp: <bind>0.0.0.0:25</bind>
+        line: <bind>0.0.0.0:465</bind>
+        backrefs: yes
+    - name: enable tls.
+      lineinfile:
+        path: ansible-fixture/smtpserver.xml
+        regexp: <tls socketTLS="false" startTLS="false">
+        line: <tls socketTLS="true" startTLS="true">
+        backrefs: yes
+    - name: set secret.
+      lineinfile:
+        path: ansible-fixture/smtpserver.xml
+        regexp: <secret>yoursecret</secret>
+        line: "<secret>{{ mail_ssl_secret }}</secret>"
+        backrefs: yes
+    - name: Deny everything and enable UFW
+      community.general.ufw:
+        state: enabled
+        policy: allow
+    - name: allow open ssh.
+      community.general.ufw:
+        rule: allow
+        name: OpenSSH
+    - name: Allow all access to tcp port 465
+      community.general.ufw:
+        rule: allow
+        port: '465'
+        proto: tcp
+    # - name: by shell
+    #   shell: |
+    #     set timeout 300
+    #     spawn keytool -genkey -alias james -keyalg RSA -keystore cc
+
+    #     expect 
+    #       -re ".*Enter keystore password:\s*$" {
+    #         send "{{ mail_ssl_secret }}\n"
+    #       }
+    #       -re ".*Re-enter new password:\s*$" {
+    #         send "{{ mail_ssl_secret }}\n"
+    #       }
+    #     }
+    #     exit 0
+    #   args:
+    #     executable: /usr/bin/expect
+    # - name: generate key.
+    #   expect:
+    #     command: keytool -genkey -alias james -keyalg RSA -keystore cc
+    #     # echo: true
+    #     responses:
+    #       (?i)password: "{{ mail_ssl_secret }}"
+    #       new password: "{{ mail_ssl_secret }}"
+    #       \[Unknown\]:
+    #         - libo jiang
+    #         - unit
+    #         - org
+    #         - city
+    #         - province
+    #         - EE
+    #       \[no\]: yes
+    #     chdir: ~
+    #     creates: cc
+      # no_log: true
+
+
+        # expect "\nEnter keystore password: "
+        # send "{{ mail_ssl_secret }}\n"
+
+        # expect "\nRe-enter new password: "
+        # send "{{ mail_ssl_secret }}\n"
+
+        # expect "\n\[Unknown\]"
+        # send "libo jiang\n"
+        # expect "\n\[Unknown\]"
+        # send "unit\n"
+        # expect "\n\[Unknown\]"
+        # send "org\n"
+        # expect "\n\[Unknown\]"
+        # send "city\n"
+        # expect "\n\[Unknown\]"
+        # send "province\n"
+        # expect "\n\[Unknown\]"
+        # send "EE\n"
+
+        # expect "\n[no]"
+        # send "yes\n"

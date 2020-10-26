@@ -13,3 +13,4 @@ build
 **/.factorypath
 james-server-app-3.5.0-app.zip
 james-server-app-3.5.0
+ansible-fixture/smtpserver.xml

@@ -1,0 +1,2 @@
+docker run -v $PWD/.m2:/root/.m2 -v $PWD:/origin -v $PWD/dockerfiles/run/spring/destination:/destination -t james/project -s SHA1
+docker run -v $PWD/.m2:/root/.m2 -v ${PWD}:/origin -v $PWD/dockerfiles/run/spring/destination:/destination -t james/project -s SHA1

@@ -1,6 +1,7 @@
 ---
 - name: install james mail server in target server.
-  gather_facts: false
+  # gather_facts: false
+  gather_facts: true
   hosts: localhost
   # vars_files:
   #   - config.cfg
@@ -15,8 +16,16 @@
           3530616237333735390a353130303962663231373038383831373234396131343038653162666436
           61376532323738343637383630643932613134323566633864613532636163353330
     mail_port: "25"
-    app_zip_file: server/app/target/
+    app_zip_file: server/app/target/james-server-app-3.5.0-app.zip
+    deploy_dir: /opt/james
+    app_folder_name: james-server-app-3.5.0
   tasks:
+    - name: os environment
+      debug:
+        msg: "{{ ansible_facts['distribution_major_version'] }}"
+    - name: current host name.
+      debug:
+        var: inventory_hostname
     - name: install dependencies.
       block:
         - name: Set python3 as the interpreter to use
@@ -25,26 +34,109 @@
         - name: what's ansible_python_interpreter?
           debug:
             var: ansible_python_interpreter
-        - name: install pip
+        - name: install python-pip
           apt:
             pkg:
               - python-pip
+          when: ansible_facts['distribution_major_version'] | int < 20
+        - name: install packages.
+          apt:
+            pkg:
               - expect
-              - zipinfo
-              - gtar
               - unzip
         - name: Install pexpect python package
           pip:
             name: pexpect
+      when: inventory_hostname != "localhost"
+    - name: create deploy directory
+      file:
+        path: "{{ deploy_dir }}"
+        state: directory
+        mode: '0755'
+      when: inventory_hostname != "localhost"
     - name: Extract app.zip into current directory
       unarchive:
         src: "{{ app_zip_file }}"
-        dest: ./
-    # - name: Create temporary build directory
-    #   tempfile:
-    #     state: directory
-    #     suffix: build
-    #   register: temp_dir
+        dest: "{{ deploy_dir }}"
+    - name: adjust firewall.
+      block:
+        - name: Deny everything and enable UFW
+          community.general.ufw:
+            state: enabled
+            policy: allow
+        - name: allow open ssh.
+          community.general.ufw:
+            rule: allow
+            name: OpenSSH
+        - name: Allow all access to tcp port 465
+          community.general.ufw:
+            rule: allow
+            port: "{{ mail_port }}"
+            proto: tcp
+      when: inventory_hostname != "localhost"
+
+    - name: generate key.
+      expect:
+        command: "keytool -genkey -alias james -keyalg RSA -keystore {{ keystore }}"
+        echo: true
+        responses:
+          (?i)password: "{{ mail_ssl_secret }}"
+          new password: "{{ mail_ssl_secret }}"
+          \[Unknown\]:
+            - libo jiang
+            - unit
+            - org
+            - city
+            - province
+            - EE
+          \[no\]: "yes"
+        chdir: ~
+        creates: "{{ keystore }}"
+      no_log: true
+      vars:
+        keystore: "{{ deploy_dir + '/' + app_folder_name + '/conf/keystore' }}"
+    # - name: adjuest imapserver.xml
+    #   block:
+    #     - name: change port to 993 and enable tls
+    #       lineinfile:
+    #         path: "{{ iampserver_file }}"
+    #         regexp: "{{ item.regexp }}"
+    #         line: "{{ item.line }}"
+    #       with_items:
+    #         - { regexp: '<bind>0.0.0.0:143</bind>', line: '<bind>0.0.0.0:993</bind>' }
+    #         - { regexp: '<tls socketTLS="false" startTLS="false">', line: '<tls socketTLS="true" startTLS="false">' }
+    #         - { regexp: '<secret>yoursecret</secret>', line: "<secret>{{ mail_ssl_secret }}</secret>"}
+    #   vars:
+    #     iampserver_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/imapserver.xml' }}"
+    #   no_log: true
+    # - name: adjust smtpserver.xml
+    #   block:
+    #     - name: enable tls
+    #       lineinfile:
+    #         path: "{{ smtpserver_file }}"
+    #         regexp: "{{ item.regexp }}"
+    #         line: "{{ item.line }}"
+    #       with_items:
+    #         - { regexp: '<tls socketTLS="false" startTLS="false">', line: '<tls socketTLS="true" startTLS="false">' }
+    #         - { regexp: '<secret>yoursecret</secret>', line: "<secret>{{ mail_ssl_secret }}</secret>"}
+    #   vars:
+    #     smtpserver_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/smtpserver.xml' }}"
+    #   no_log: true
+    - name: adjust domainlist.xml
+      block:
+        - name: add resp.me
+          replace:
+            path: "{{ domainlist_file }}"
+            regexp: (<domainlist class="org.apache.james.domainlist.jpa.JPADomainList">)
+            replace: |
+              \1  
+              <domainnames>
+                <domainname>resp.me</domainname>
+              </domainnames>
+      vars:
+        domainlist_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/domainlist.xml' }}"
+
+
     # - name: change port to 465
     #   lineinfile:
     #     path: ansible-fixture/smtpserver.xml
@@ -63,73 +155,3 @@
     #     regexp: <secret>yoursecret</secret>
     #     line: "<secret>{{ mail_ssl_secret }}</secret>"
     #     backrefs: yes
-    - name: Deny everything and enable UFW
-      community.general.ufw:
-        state: enabled
-        policy: allow
-    - name: allow open ssh.
-      community.general.ufw:
-        rule: allow
-        name: OpenSSH
-    - name: Allow all access to tcp port 465
-      community.general.ufw:
-        rule: allow
-        port: "{{ mail_port }}"
-        proto: tcp
-    # - name: by shell
-    #   shell: |
-    #     set timeout 300
-    #     spawn keytool -genkey -alias james -keyalg RSA -keystore cc
-
-    #     expect 
-    #       -re ".*Enter keystore password:\s*$" {
-    #         send "{{ mail_ssl_secret }}\n"
-    #       }
-    #       -re ".*Re-enter new password:\s*$" {
-    #         send "{{ mail_ssl_secret }}\n"
-    #       }
-    #     }
-    #     exit 0
-    #   args:
-    #     executable: /usr/bin/expect
-    # - name: generate key.
-    #   expect:
-    #     command: keytool -genkey -alias james -keyalg RSA -keystore cc
-    #     # echo: true
-    #     responses:
-    #       (?i)password: "{{ mail_ssl_secret }}"
-    #       new password: "{{ mail_ssl_secret }}"
-    #       \[Unknown\]:
-    #         - libo jiang
-    #         - unit
-    #         - org
-    #         - city
-    #         - province
-    #         - EE
-    #       \[no\]: yes
-    #     chdir: ~
-    #     creates: cc
-      # no_log: true
-
-
-        # expect "\nEnter keystore password: "
-        # send "{{ mail_ssl_secret }}\n"
-
-        # expect "\nRe-enter new password: "
-        # send "{{ mail_ssl_secret }}\n"
-
-        # expect "\n\[Unknown\]"
-        # send "libo jiang\n"
-        # expect "\n\[Unknown\]"
-        # send "unit\n"
-        # expect "\n\[Unknown\]"
-        # send "org\n"
-        # expect "\n\[Unknown\]"
-        # send "city\n"
-        # expect "\n\[Unknown\]"
-        # send "province\n"
-        # expect "\n\[Unknown\]"
-        # send "EE\n"
-
-        # expect "\n[no]"
-        # send "yes\n"

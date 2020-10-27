@@ -14,39 +14,55 @@
           63316232623139333933306533313931613465636632656230306466383265306162346434653138
           3530616237333735390a353130303962663231373038383831373234396131343038653162666436
           61376532323738343637383630643932613134323566633864613532636163353330
+    mail_port: "25"
+    app_zip_file: server/app/target/
   tasks:
-    - name: Set python3 as the interpreter to use
-      set_fact:
-        ansible_python_interpreter: /usr/bin/python
-    - name: what's ansible_python_interpreter?
-      debug:
-        var: ansible_python_interpreter
-    - name: install pip
-      apt:
-        pkg:
-          - python-pip
-          - expect
-    - name: Install pexpect python package
-      pip:
-        name: pexpect
-    - name: change port to 465
-      lineinfile:
-        path: ansible-fixture/smtpserver.xml
-        regexp: <bind>0.0.0.0:25</bind>
-        line: <bind>0.0.0.0:465</bind>
-        backrefs: yes
-    - name: enable tls.
-      lineinfile:
-        path: ansible-fixture/smtpserver.xml
-        regexp: <tls socketTLS="false" startTLS="false">
-        line: <tls socketTLS="true" startTLS="true">
-        backrefs: yes
-    - name: set secret.
-      lineinfile:
-        path: ansible-fixture/smtpserver.xml
-        regexp: <secret>yoursecret</secret>
-        line: "<secret>{{ mail_ssl_secret }}</secret>"
-        backrefs: yes
+    - name: install dependencies.
+      block:
+        - name: Set python3 as the interpreter to use
+          set_fact:
+            ansible_python_interpreter: /usr/bin/python
+        - name: what's ansible_python_interpreter?
+          debug:
+            var: ansible_python_interpreter
+        - name: install pip
+          apt:
+            pkg:
+              - python-pip
+              - expect
+              - zipinfo
+              - gtar
+              - unzip
+        - name: Install pexpect python package
+          pip:
+            name: pexpect
+    - name: Extract app.zip into current directory
+      unarchive:
+        src: "{{ app_zip_file }}"
+        dest: ./
+    # - name: Create temporary build directory
+    #   tempfile:
+    #     state: directory
+    #     suffix: build
+    #   register: temp_dir
+    # - name: change port to 465
+    #   lineinfile:
+    #     path: ansible-fixture/smtpserver.xml
+    #     regexp: <bind>0.0.0.0:25</bind>
+    #     line: <bind>0.0.0.0:465</bind>
+    #     backrefs: yes
+    # - name: enable tls.
+    #   lineinfile:
+    #     path: ansible-fixture/smtpserver.xml
+    #     regexp: <tls socketTLS="false" startTLS="false">
+    #     line: <tls socketTLS="true" startTLS="true">
+    #     backrefs: yes
+    # - name: set secret.
+    #   lineinfile:
+    #     path: ansible-fixture/smtpserver.xml
+    #     regexp: <secret>yoursecret</secret>
+    #     line: "<secret>{{ mail_ssl_secret }}</secret>"
+    #     backrefs: yes
     - name: Deny everything and enable UFW
       community.general.ufw:
         state: enabled
@@ -58,7 +74,7 @@
     - name: Allow all access to tcp port 465
       community.general.ufw:
         rule: allow
-        port: '465'
+        port: "{{ mail_port }}"
         proto: tcp
     # - name: by shell
     #   shell: |

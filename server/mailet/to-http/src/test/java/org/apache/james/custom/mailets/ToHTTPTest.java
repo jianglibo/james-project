@@ -17,7 +17,7 @@
  * under the License.                                           *
  ****************************************************************/
 
-package org.apache.james.transport.mailets;
+package org.apache.james.custom.mailets;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -49,7 +49,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class HeadersToHTTPTest {
+class ToHTTPTest {
 
     private static HttpServer server;
     private static UriHttpRequestHandlerMapper mapper;
@@ -92,7 +92,7 @@ class HeadersToHTTPTest {
                 .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
                 .setProperty("url", "http://qwerty.localhost:12345" + urlTestPattern).build();
 
-        Mailet mailet = new HeadersToHTTP();
+        Mailet mailet = new ToHttp();
         mailet.init(mailetConfig);
 
         mailet.service(mail);
@@ -117,7 +117,7 @@ class HeadersToHTTPTest {
 
         mapper.register(urlTestPattern, (request, response, context) -> response.setStatusCode(HttpStatus.SC_OK));
 
-        Mailet mailet = new HeadersToHTTP();
+        Mailet mailet = new ToHttp();
         mailet.init(mailetConfig);
 
         mailet.service(mail);
@@ -171,7 +171,7 @@ class HeadersToHTTPTest {
             response.setStatusCode(HttpStatus.SC_OK);
         });
 
-        Mailet mailet = new HeadersToHTTP();
+        Mailet mailet = new ToHttp();
         mailet.init(mailetConfig);
 
         mailet.service(mail);
@@ -191,7 +191,7 @@ class HeadersToHTTPTest {
 
         mapper.register(urlTestPattern, (request, response, context) -> response.setStatusCode(HttpStatus.SC_OK));
 
-        Mailet mailet = new HeadersToHTTP();
+        Mailet mailet = new ToHttp();
         mailet.init(mailetConfig);
 
         mailet.service(mail);
@@ -207,7 +207,7 @@ class HeadersToHTTPTest {
                 .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
                 .setProperty("url", "qwerty://invalid.url").build();
 
-        assertThatThrownBy(() -> new HeadersToHTTP().init(mailetConfig))
+        assertThatThrownBy(() -> new ToHttp().init(mailetConfig))
             .isExactlyInstanceOf(MessagingException.class)
             .hasMessageContaining("Unable to contruct URL object from url");
     }
@@ -218,7 +218,7 @@ class HeadersToHTTPTest {
                 .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
                 .build();
 
-        assertThatThrownBy(() -> new HeadersToHTTP().init(mailetConfig))
+        assertThatThrownBy(() -> new ToHttp().init(mailetConfig))
             .isExactlyInstanceOf(MessagingException.class)
             .hasMessageContaining("Please configure a targetUrl (\"url\")");
     }

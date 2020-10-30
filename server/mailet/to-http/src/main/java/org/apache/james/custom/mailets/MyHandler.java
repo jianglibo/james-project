@@ -3,19 +3,23 @@ package org.apache.james.custom.mailets;
 import org.apache.james.mime4j.MimeException;
 import org.apache.james.mime4j.dom.Header;
 import org.apache.james.mime4j.message.SimpleContentHandler;
+import org.apache.james.mime4j.parser.AbstractContentHandler;
 import org.apache.james.mime4j.stream.BodyDescriptor;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * All we need is MimeMessage's header and subject and bodies.
+ */
 public class MyHandler extends SimpleContentHandler {
 
   private List<StringifyHeader> parsedHeaders;
   private List<ParsedMail.MailStringBody> mailStringBody;
+
+  private Header lastHeader;
 
   public List<ParsedMail.MailStringBody> getMailStringBody() {
     return mailStringBody;
@@ -33,21 +37,37 @@ public class MyHandler extends SimpleContentHandler {
 
   @Override
   public void headers(Header header) {
+    lastHeader = header;
     parsedHeaders.add(new StringifyHeader(header));
   }
 
-  @Override
-  public void startMultipart(BodyDescriptor bd) throws MimeException {
-    super.startMultipart(bd);
-  }
+//  @Override
+//  public void startMultipart(BodyDescriptor bd) throws MimeException {
+//    super.startMultipart(bd);
+//  }
 
-  @Override
-  public void endMultipart() throws MimeException {
-    super.endMultipart();
-  }
+//  @Override
+//  public void endMultipart() throws MimeException {
+//    super.endMultipart();
+//  }
 
   @Override
   public void body(BodyDescriptor bd, InputStream is) throws MimeException, IOException {
+//    InputStreamReader instream = new InputStreamReader(is);
+//    BufferedReader buffer = new BufferedReader(instream);
+//
+//
+//    buffer.lines().forEach(line -> {
+//      System.out.println(line);
+//    });
+
+//    String line = buffer.readLine();
+
+//    if (bd.getBoundary().equals(line)) {
+//
+//
+//    }
+
     try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
       int nRead;
       byte[] data = new byte[1024];

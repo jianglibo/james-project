@@ -25,7 +25,8 @@ class ParsedMailTest {
   @Test
   void t() throws MessagingException, IOException {
     MimeMessage mm = MimeMessageUtil.mimeMessageFromStream(
-            ClassLoader.getSystemResourceAsStream("mime/sendToRemoteHttp.mime"));
+//            ClassLoader.getSystemResourceAsStream("mime/sendToRemoteHttp.mime"));
+    ClassLoader.getSystemResourceAsStream("mime/gmail.mime"));
     MyHandler handler = ParsedMail.parse(mm);
 
     assertThat("a").hasSize(1);

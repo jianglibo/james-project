@@ -27,7 +27,7 @@ class ParsedMailTest {
     MimeMessage mm = MimeMessageUtil.mimeMessageFromStream(
 //            ClassLoader.getSystemResourceAsStream("mime/sendToRemoteHttp.mime"));
     ClassLoader.getSystemResourceAsStream("mime/gmail.mime"));
-    MyHandler handler = ParsedMail.parse(mm);
+    MailDto mailDto = ParsedMail.parse(mm);
 
     assertThat("a").hasSize(1);
   }

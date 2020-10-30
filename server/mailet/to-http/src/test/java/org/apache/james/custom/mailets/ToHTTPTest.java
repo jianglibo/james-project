@@ -20,6 +20,7 @@
 package org.apache.james.custom.mailets;
 
 import org.apache.http.ExceptionLogger;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
@@ -47,228 +48,212 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ToHTTPTest {
 
-    private static HttpServer server;
-    private static UriHttpRequestHandlerMapper mapper;
-    private Mail mail;
+  private static HttpServer server;
+  private static UriHttpRequestHandlerMapper mapper;
+  private Mail mail;
 
-    private String urlTestPattern;
+  private String urlTestPattern;
 
-    @BeforeAll
-    static void setupServer() throws Exception {
-        mapper = new UriHttpRequestHandlerMapper();
+  @BeforeAll
+  static void setupServer() throws Exception {
+    mapper = new UriHttpRequestHandlerMapper();
 
-        SocketConfig socketConfig = SocketConfig.custom().setSoTimeout(50000).build();
-        server = ServerBootstrap.bootstrap().setListenerPort(0).setSocketConfig(socketConfig)
-                .setExceptionLogger(ExceptionLogger.NO_OP).setHandlerMapper(mapper).create();
+    SocketConfig socketConfig = SocketConfig.custom().setSoTimeout(50000).build();
+    server = ServerBootstrap.bootstrap().setListenerPort(0).setSocketConfig(socketConfig)
+            .setExceptionLogger(ExceptionLogger.NO_OP).setHandlerMapper(mapper).create();
 
-        server.start();
-    }
+    server.start();
+  }
 
-    @AfterAll
-    static void shutdown() {
-        server.shutdown(5L, TimeUnit.SECONDS);
-    }
+  @AfterAll
+  static void shutdown() {
+    server.shutdown(5L, TimeUnit.SECONDS);
+  }
 
-    @BeforeEach
-    void setup() throws Exception {
-        mail = MailUtil.createMockMail2Recipients(MimeMessageUtil.mimeMessageFromStream(
-                ClassLoader.getSystemResourceAsStream("mime/sendToRemoteHttp.mime")));
-    }
+  @BeforeEach
+  void setup() throws Exception {
+    mail = MailUtil.createMockMail2Recipients(MimeMessageUtil.mimeMessageFromStream(
+            ClassLoader.getSystemResourceAsStream("mime/sendToRemoteHttp.mime")));
+  }
 
-    @AfterEach
-    void cleanMapper() {
-        mapper.unregister(urlTestPattern);
-    }
+  @AfterEach
+  void cleanMapper() {
+    mapper.unregister(urlTestPattern);
+  }
 
-    @Test
-    void shouldBeFailedWhenServiceNotExists() throws Exception {
-        urlTestPattern = "/path/to/service/failed";
+  @Test
+  void shouldBeFailedWhenServiceNotExists() throws Exception {
+    urlTestPattern = "/path/to/service/failed";
 
-        FakeMailetConfig mailetConfig = FakeMailetConfig.builder()
-                .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
-                .setProperty("url", "http://qwerty.localhost:12345" + urlTestPattern).build();
+    FakeMailetConfig mailetConfig = FakeMailetConfig.builder()
+            .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
+            .setProperty("url", "http://qwerty.localhost:12345" + urlTestPattern).build();
 
-        Mailet mailet = new ToHttp();
-        mailet.init(mailetConfig);
+    Mailet mailet = new ToHttp();
+    mailet.init(mailetConfig);
 
-        mailet.service(mail);
+    mailet.service(mail);
 
-        assertThat(mail.getMessage().getHeader("X-headerToHTTP"))
+    assertThat(mail.getMessage().getHeader("X-headerToHTTP"))
             .hasSize(1)
             .allSatisfy((header) -> assertThat(header).isEqualTo("Failed"));
-        assertThat(mail.getMessage().getHeader("X-headerToHTTPFailure"))
+    assertThat(mail.getMessage().getHeader("X-headerToHTTPFailure"))
             .hasSize(1)
             .allSatisfy((header) -> assertThat(header).isNotBlank());
-    }
+  }
 
-    @Test
-    void shouldParseGmail() throws MessagingException, IOException {
-        urlTestPattern = "/path/to/service/succeeded";
-        Mail mail = MailUtil.createMockMail2Recipients(MimeMessageUtil.mimeMessageFromStream(
-                ClassLoader.getSystemResourceAsStream("mime/gmail.mime")));
+  @Test
+  void shouldParseGmail() throws MessagingException, IOException {
+    urlTestPattern = "/path/to/service/succeeded";
+    Mail mail = MailUtil.createMockMail2Recipients(MimeMessageUtil.mimeMessageFromStream(
+            ClassLoader.getSystemResourceAsStream("mime/gmail.mime")));
 
-        FakeMailetConfig mailetConfig = FakeMailetConfig.builder()
-                .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
-                .setProperty("url", "http://" + server.getInetAddress().getHostAddress() + ":"
-                        + server.getLocalPort() + urlTestPattern)
-                .build();
-        ToHttp mailet = new ToHttp();
-        mailet.init(mailetConfig);
+    FakeMailetConfig mailetConfig = FakeMailetConfig.builder()
+            .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
+            .setProperty("url", "http://" + server.getInetAddress().getHostAddress() + ":"
+                    + server.getLocalPort() + urlTestPattern)
+            .build();
+    ToHttp mailet = new ToHttp();
+    mailet.init(mailetConfig);
 
-        mailet.service(mail);
+    mailet.service(mail);
 
-        MyHandler handler = ParsedMail.parse(mail.getMessage());
+    MailDto mailDto = ParsedMail.parse(mail.getMessage());
 
-        String s = mailet.getObjectMapper().writeValueAsString(handler.getParsedHeaders());
-        String s1 = mailet.getObjectMapper().writeValueAsString(handler.getMailStringBody());
-        assertThat("a").hasSize(1);
+    String s = mailet.getObjectMapper().writeValueAsString(mailDto);
+    assertThat("a").hasSize(1);
 
-    }
+  }
 
-    @Test
-    void shouldBeSucceededWhenServiceResponseIsOk() throws Exception {
-        urlTestPattern = "/path/to/service/succeeded";
+  @Test
+  void shouldBeSucceededWhenServiceResponseIsOk() throws Exception {
+    urlTestPattern = "/path/to/service/succeeded";
 
-        FakeMailetConfig mailetConfig = FakeMailetConfig.builder()
-                .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
-                .setProperty("url", "http://" + server.getInetAddress().getHostAddress() + ":"
-                        + server.getLocalPort() + urlTestPattern)
-                .build();
+    FakeMailetConfig mailetConfig = FakeMailetConfig.builder()
+            .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
+            .setProperty("url", "http://" + server.getInetAddress().getHostAddress() + ":"
+                    + server.getLocalPort() + urlTestPattern)
+            .build();
 
-        mapper.register(urlTestPattern, (request, response, context) -> response.setStatusCode(HttpStatus.SC_OK));
 
-        ToHttp mailet = new ToHttp();
-        mailet.init(mailetConfig);
+    ToHttp mailet = new ToHttp();
+    mapper.register(urlTestPattern, (request, response, context) -> {
+      if (request instanceof  BasicHttpEntityEnclosingRequest) {
+        HttpEntity entity = ((BasicHttpEntityEnclosingRequest) request).getEntity();
+        MailDto md = mailet.getObjectMapper().readValue(entity.getContent(), MailDto.class);
+        assertThat(md.getHeaders().get("reply_to")).isEqualTo("abc");
+      }
+      response.setStatusCode(HttpStatus.SC_OK);
 
-        mailet.service(mail);
+    });
+    mailet.init(mailetConfig);
 
-//        ByteArrayOutputStream out = new ByteArrayOutputStream();
-//            mail.getMessage().writeTo(out);
-//
-//            String s = out.toString("UTF-8");
+    mailet.service(mail);
 
-//        MimeMessageUtil.asString()
 
-//        ContentHandler handler = new SimpleContentHandler() {
-//            @Override
-//            public void headers(Header header) {
-//
-//            }
-//        };
-//        MimeConfig config = new MimeConfig();
-//        MimeStreamParser parser = new MimeStreamParser(config);
-//        parser.setContentHandler(handler);
-//        InputStream instream = new FileInputStream("mime.msg");
-//        try {
-//            parser.parse(instream);
-//        } finally {
-//            instream.close();
-//        }
+    MailDto mailDto = ParsedMail.parse(mail.getMessage());
 
-        MyHandler handler = ParsedMail.parse(mail.getMessage());
+    String s = mailet.getObjectMapper().writeValueAsString(mailDto);
 
-        String s = mailet.getObjectMapper().writeValueAsString(handler.getParsedHeaders());
-        String s1 = mailet.getObjectMapper().writeValueAsString(handler.getMailStringBody());
-
-        assertThat(mail.getMessage().getHeader("X-headerToHTTP"))
+    assertThat(mail.getMessage().getHeader("X-headerToHTTP"))
             .hasSize(1)
             .allSatisfy((header) -> assertThat(header).isEqualTo("Succeeded"));
-    }
+  }
 
-    @Test
-    void serviceShouldNotModifyHeadersContent() throws Exception {
-        urlTestPattern = "/path/to/service/succeeded";
+  @Test
+  void serviceShouldNotModifyHeadersContent() throws Exception {
+    urlTestPattern = "/path/to/service/succeeded";
 
-        FakeMailetConfig mailetConfig = FakeMailetConfig.builder()
-                .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
-                .setProperty("url", "http://" + server.getInetAddress().getHostAddress() + ":"
-                        + server.getLocalPort() + urlTestPattern)
-                .build();
+    FakeMailetConfig mailetConfig = FakeMailetConfig.builder()
+            .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
+            .setProperty("url", "http://" + server.getInetAddress().getHostAddress() + ":"
+                    + server.getLocalPort() + urlTestPattern)
+            .build();
 
-        mapper.register(urlTestPattern, (request, response, context) -> {
+    mapper.register(urlTestPattern, (request, response, context) -> {
 
-            assertThat(request.getRequestLine().getMethod()).isEqualTo("POST");
+      assertThat(request.getRequestLine().getMethod()).isEqualTo("POST");
 
-            BasicHttpEntityEnclosingRequest basicRequest = (BasicHttpEntityEnclosingRequest) request;
-            BasicHttpEntity entity = (BasicHttpEntity) basicRequest.getEntity();
+      BasicHttpEntityEnclosingRequest basicRequest = (BasicHttpEntityEnclosingRequest) request;
+      BasicHttpEntity entity = (BasicHttpEntity) basicRequest.getEntity();
 
-            try {
-                List<NameValuePair> params = URLEncodedUtils.parse(entity);
-                assertThat(params).hasSize(5).anySatisfy((param) -> {
-                    assertThat(param.getName()).isEqualTo("pKey");
-                    assertThat(param.getValue()).isEqualTo("pValue");
-                }).anySatisfy((param) -> {
-                    assertThat(param.getName()).isEqualTo("subject");
-                    assertThat(param.getValue()).isEqualTo("Fwd: Invitation: (Aucun objet) - "
-                            + "ven. 20 janv. 2017 14:00 - 15:00 (CET) (aduprat@linagora.com)");
-                }).anySatisfy((param) -> {
-                    assertThat(param.getName()).isEqualTo("message_id");
-                    assertThat(param.getValue())
-                            .isEqualTo("<f18fa52e-2e9d-1125-327d-2100b23f8a6b@linagora.com>");
-                }).anySatisfy((param) -> {
-                    assertThat(param.getName()).isEqualTo("reply_to");
-                    assertThat(param.getValue()).isEqualTo("[aduprat <duprat@linagora.com>]");
-                }).anySatisfy((param) -> {
-                    assertThat(param.getName()).isEqualTo("size");
-                    assertThat(param.getValue()).isEqualTo("5242");
-                });
-
-            } finally {
-                EntityUtils.consume(basicRequest.getEntity());
-            }
-            response.setStatusCode(HttpStatus.SC_OK);
+      try {
+        List<NameValuePair> params = URLEncodedUtils.parse(entity);
+        assertThat(params).hasSize(5).anySatisfy((param) -> {
+          assertThat(param.getName()).isEqualTo("pKey");
+          assertThat(param.getValue()).isEqualTo("pValue");
+        }).anySatisfy((param) -> {
+          assertThat(param.getName()).isEqualTo("subject");
+          assertThat(param.getValue()).isEqualTo("Fwd: Invitation: (Aucun objet) - "
+                  + "ven. 20 janv. 2017 14:00 - 15:00 (CET) (aduprat@linagora.com)");
+        }).anySatisfy((param) -> {
+          assertThat(param.getName()).isEqualTo("message_id");
+          assertThat(param.getValue())
+                  .isEqualTo("<f18fa52e-2e9d-1125-327d-2100b23f8a6b@linagora.com>");
+        }).anySatisfy((param) -> {
+          assertThat(param.getName()).isEqualTo("reply_to");
+          assertThat(param.getValue()).isEqualTo("[aduprat <duprat@linagora.com>]");
+        }).anySatisfy((param) -> {
+          assertThat(param.getName()).isEqualTo("size");
+          assertThat(param.getValue()).isEqualTo("5242");
         });
 
-        Mailet mailet = new ToHttp();
-        mailet.init(mailetConfig);
+      } finally {
+        EntityUtils.consume(basicRequest.getEntity());
+      }
+      response.setStatusCode(HttpStatus.SC_OK);
+    });
 
-        mailet.service(mail);
+    Mailet mailet = new ToHttp();
+    mailet.init(mailetConfig);
 
-    }
+    mailet.service(mail);
 
-    @Test
-    void shouldSetTheMailStateWhenPassThroughIsFalse() throws Exception {
-        urlTestPattern = "/path/to/service/PassThroughIsFalse";
+  }
 
-        FakeMailetConfig mailetConfig = FakeMailetConfig.builder()
-                .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
-                .setProperty("url",
-                        "http://" + server.getInetAddress().getHostAddress() + ":"
-                                + server.getLocalPort() + urlTestPattern)
-                .setProperty("passThrough", "false").build();
+  @Test
+  void shouldSetTheMailStateWhenPassThroughIsFalse() throws Exception {
+    urlTestPattern = "/path/to/service/PassThroughIsFalse";
 
-        mapper.register(urlTestPattern, (request, response, context) -> response.setStatusCode(HttpStatus.SC_OK));
+    FakeMailetConfig mailetConfig = FakeMailetConfig.builder()
+            .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
+            .setProperty("url",
+                    "http://" + server.getInetAddress().getHostAddress() + ":"
+                            + server.getLocalPort() + urlTestPattern)
+            .setProperty("passThrough", "false").build();
 
-        Mailet mailet = new ToHttp();
-        mailet.init(mailetConfig);
+    mapper.register(urlTestPattern, (request, response, context) -> response.setStatusCode(HttpStatus.SC_OK));
 
-        mailet.service(mail);
+    Mailet mailet = new ToHttp();
+    mailet.init(mailetConfig);
 
-        assertThat(mail.getMessage().getHeader("X-headerToHTTP")).isNull();
+    mailet.service(mail);
 
-        assertThat(mail.getState()).isEqualTo(Mail.GHOST);
-    }
+    assertThat(mail.getMessage().getHeader("X-headerToHTTP")).isNull();
 
-    @Test
-    void shouldThrowMessagingExceptionWhenInvalidUrl() {
-        FakeMailetConfig mailetConfig = FakeMailetConfig.builder()
-                .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
-                .setProperty("url", "qwerty://invalid.url").build();
+    assertThat(mail.getState()).isEqualTo(Mail.GHOST);
+  }
 
-        assertThatThrownBy(() -> new ToHttp().init(mailetConfig))
+  @Test
+  void shouldThrowMessagingExceptionWhenInvalidUrl() {
+    FakeMailetConfig mailetConfig = FakeMailetConfig.builder()
+            .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
+            .setProperty("url", "qwerty://invalid.url").build();
+
+    assertThatThrownBy(() -> new ToHttp().init(mailetConfig))
             .isExactlyInstanceOf(MessagingException.class)
             .hasMessageContaining("Unable to contruct URL object from url");
-    }
+  }
 
-    @Test
-    void shouldThrowMessagingExceptionWhenUrlIsNull() {
-        FakeMailetConfig mailetConfig = FakeMailetConfig.builder()
-                .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
-                .build();
+  @Test
+  void shouldThrowMessagingExceptionWhenUrlIsNull() {
+    FakeMailetConfig mailetConfig = FakeMailetConfig.builder()
+            .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
+            .build();
 
-        assertThatThrownBy(() -> new ToHttp().init(mailetConfig))
+    assertThatThrownBy(() -> new ToHttp().init(mailetConfig))
             .isExactlyInstanceOf(MessagingException.class)
             .hasMessageContaining("Please configure a targetUrl (\"url\")");
-    }
+  }
 
 }

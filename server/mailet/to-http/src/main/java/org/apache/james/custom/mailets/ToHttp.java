@@ -31,9 +31,11 @@ import javax.mail.internet.MimeMessage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.EntityBuilder;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
+import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
@@ -44,159 +46,131 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Serialise the email and pass it to an HTTP call
- * 
+ * <p>
  * Sample configuration:
- * 
- <mailet match="All" class="HeadersToHTTP">
-   <url>http://192.168.0.252:3000/alarm</url>
-   <parameterKey>Test</parameterKey>
-   <parameterValue>ParameterValue</parameterValue>
-   <passThrough>true</passThrough>
- </mailet>
- * 
+ *
+ * <mailet match="All" class="HeadersToHTTP">
+ * <url>http://192.168.0.252:3000/alarm</url>
+ * <parameterKey>Test</parameterKey>
+ * <parameterValue>ParameterValue</parameterValue>
+ * <passThrough>true</passThrough>
+ * </mailet>
  */
 
 public class ToHttp extends GenericMailet {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ToHttp.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ToHttp.class);
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+  private ObjectMapper objectMapper = new ObjectMapper();
 
-    public ObjectMapper getObjectMapper() {
-        return objectMapper;
+//    private RequestBuilder requestBuilder;
+
+  public ObjectMapper getObjectMapper() {
+    return objectMapper;
+  }
+
+  /**
+   * The name of the header to be added.
+   */
+  private String url;
+  private String parameterKey = null;
+  private String parameterValue = null;
+  private boolean passThrough = true;
+
+  @Override
+  public void init() throws MessagingException {
+
+    this.objectMapper = new ObjectMapper();
+
+//        requestBuilder = RequestBuilder.post(url).setHeader("Content-Type", "application/json");
+//        requestBuilder.setEntity()
+
+    passThrough = (getInitParameter("passThrough", "true").compareToIgnoreCase("true") == 0);
+    String targetUrl = getInitParameter("url");
+    parameterKey = getInitParameter("parameterKey");
+    parameterValue = getInitParameter("parameterValue");
+
+    // Check if needed config values are used
+    if (targetUrl == null || targetUrl.equals("")) {
+      throw new MessagingException("Please configure a targetUrl (\"url\")");
+    } else {
+      try {
+        // targetUrl = targetUrl + ( targetUrl.contains("?") ? "&" :
+        // "?") + parameterKey + "=" + parameterValue;
+        url = new URL(targetUrl).toExternalForm();
+      } catch (MalformedURLException e) {
+        throw new MessagingException(
+                "Unable to construct URL object from url");
+      }
     }
 
-    /**
-     * The name of the header to be added.
-     */
-    private String url;
-    private String parameterKey = null;
-    private String parameterValue = null;
-    private boolean passThrough = true;
-
-    @Override
-    public void init() throws MessagingException {
-
-        passThrough = (getInitParameter("passThrough", "true").compareToIgnoreCase("true") == 0);
-        String targetUrl = getInitParameter("url");
-        parameterKey = getInitParameter("parameterKey");
-        parameterValue = getInitParameter("parameterValue");
-
-        // Check if needed config values are used
-        if (targetUrl == null || targetUrl.equals("")) {
-            throw new MessagingException("Please configure a targetUrl (\"url\")");
-        } else {
-            try {
-                // targetUrl = targetUrl + ( targetUrl.contains("?") ? "&" :
-                // "?") + parameterKey + "=" + parameterValue;
-                url = new URL(targetUrl).toExternalForm();
-            } catch (MalformedURLException e) {
-                throw new MessagingException(
-                        "Unable to construct URL object from url");
-            }
-        }
-
-        // record the result
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("I will attempt to deliver serialised messages to "
-                    + targetUrl
-                    + ". "
-                    + (((parameterKey == null) || (parameterKey.length() < 1)) ? "I will not add any fields to the post. " : "I will prepend: " + parameterKey + "=" + parameterValue + ". ")
-                    + (passThrough ? "Messages will pass through." : "Messages will be ghosted."));
-        }
+    // record the result
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("I will attempt to deliver serialised messages to "
+              + targetUrl
+              + ". "
+              + (((parameterKey == null) || (parameterKey.length() < 1)) ? "I will not add any fields to the post. " : "I will prepend: " + parameterKey + "=" + parameterValue + ". ")
+              + (passThrough ? "Messages will pass through." : "Messages will be ghosted."));
     }
+  }
 
-    /**
-     * Takes the message, serialises it and sends it to the URL
-     * 
-     * @param mail
-     *            the mail being processed
-     * 
-     */
-    @Override
-    public void service(Mail mail) {
-        try {
-            LOGGER.debug("{} HeadersToHTTP: Starting", mail.getName());
-            MimeMessage message = mail.getMessage();
-            HashSet<NameValuePair> pairs = getNameValuePairs(message);
-            LOGGER.debug("{} HeadersToHTTP: {} named value pairs found", mail.getName(), pairs.size());
-            String result = httpPost(pairs);
-            if (passThrough) {
-                addHeader(mail, true, result);
-            } else {
-                mail.setState(Mail.GHOST);
-            }
-        } catch (MessagingException | IOException e) {
-            LOGGER.error("Exception", e);
-            addHeader(mail, false, e.getMessage());
-        }
+  /**
+   * Takes the message, serialises it and sends it to the URL
+   *
+   * @param mail the mail being processed
+   */
+  @Override
+  public void service(Mail mail) {
+    try {
+      LOGGER.debug("{} HeadersToHTTP: Starting", mail.getName());
+      MimeMessage message = mail.getMessage();
+      MailDto pairs = ParsedMail.parse(message);
+//            LOGGER.debug("{} HeadersToHTTP: {} named value pairs found", mail.getName(), pairs.size());
+      String result = httpPost(pairs);
+      if (passThrough) {
+        addHeader(mail, true, result);
+      } else {
+        mail.setState(Mail.GHOST);
+      }
+    } catch (MessagingException | IOException e) {
+      LOGGER.error("Exception", e);
+      addHeader(mail, false, e.getMessage());
     }
+  }
 
-    private void addHeader(Mail mail, boolean success, String errorMessage) {
-        try {
-            MimeMessage message = mail.getMessage();
-            message.setHeader("X-headerToHTTP", (success ? "Succeeded" : "Failed"));
-            if (!success && errorMessage != null && errorMessage.length() > 0) {
-                message.setHeader("X-headerToHTTPFailure", errorMessage);
-            }
-            message.saveChanges();
-        } catch (MessagingException e) {
-            LOGGER.error("Exception", e);
-        }
+  private void addHeader(Mail mail, boolean success, String errorMessage) {
+    try {
+      MimeMessage message = mail.getMessage();
+      message.setHeader("X-headerToHTTP", (success ? "Succeeded" : "Failed"));
+      if (!success && errorMessage != null && errorMessage.length() > 0) {
+        message.setHeader("X-headerToHTTPFailure", errorMessage);
+      }
+      message.saveChanges();
+    } catch (MessagingException e) {
+      LOGGER.error("Exception", e);
     }
+  }
 
-    private String httpPost(HashSet<NameValuePair> pairs) throws IOException {
 
-        try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
-            HttpUriRequest request = RequestBuilder.post(url).addParameters(pairs.toArray(new NameValuePair[0])).build();
-            try (CloseableHttpResponse clientResponse = client.execute(request)) {
-                String result = clientResponse.getStatusLine().getStatusCode() + ": " + clientResponse.getStatusLine();
-                LOGGER.debug("HeadersToHTTP: {}", result);
-                return result;
-            }
-        }
+  private String httpPost(MailDto pairs) throws IOException {
+    String body = objectMapper.writeValueAsString(pairs);
+
+    try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
+      HttpUriRequest request = RequestBuilder.post(url)
+              .setEntity(EntityBuilder.create().setText(body).setContentType(ContentType.APPLICATION_JSON).build()).build();
+      try (CloseableHttpResponse clientResponse = client.execute(request)) {
+        String result = clientResponse.getStatusLine().getStatusCode() + ": " + clientResponse.getStatusLine();
+        LOGGER.debug("HeadersToHTTP: {}", result);
+        return result;
+      }
     }
+  }
 
-    private HashSet<NameValuePair> getNameValuePairs(MimeMessage message) throws UnsupportedEncodingException, MessagingException {
 
-        // to_address
-        // from
-        // reply to
-        // subject
-
-        HashSet<NameValuePair> pairs = new HashSet<>();
-
-        if (message != null) {
-            if (message.getSender() != null) {
-                pairs.add(new BasicNameValuePair("from", message.getSender().toString()));
-            }
-            if (message.getReplyTo() != null) {
-                pairs.add(new BasicNameValuePair("reply_to", Arrays.toString(message.getReplyTo())));
-            }
-            if (message.getMessageID() != null) {
-                pairs.add(new BasicNameValuePair("message_id", message.getMessageID()));
-            }
-            if (message.getSubject() != null) {
-                pairs.add(new BasicNameValuePair("subject", message.getSubject()));
-            }
-            pairs.add(new BasicNameValuePair("size", Integer.toString(message.getSize())));
-            try {
-                Object c = message.getContent();
-                System.out.println(c.toString());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        pairs.add(new BasicNameValuePair(parameterKey, parameterValue));
-
-        return pairs;
-    }
-
-    @Override
-    public String getMailetInfo() {
-        return "HTTP POST serialised message";
-    }
+  @Override
+  public String getMailetInfo() {
+    return "HTTP POST serialised message";
+  }
 
 
 }

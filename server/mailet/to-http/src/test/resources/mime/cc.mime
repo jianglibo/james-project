@@ -1,0 +1,82 @@
+Delivered-To: jianglibo@gmail.com
+Received: by 2002:a2e:99c4:0:0:0:0:0 with SMTP id l4csp23926ljj;
+        Tue, 5 May 2020 22:35:21 -0700 (PDT)
+X-Received: by 2002:a05:6102:7a1:: with SMTP id x1mr6912102vsg.221.1588743321765;
+        Tue, 05 May 2020 22:35:21 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1588743321; cv=none;
+        d=google.com; s=arc-20160816;
+        b=r46u830uJGiKNKW3qt/l7mHbhNy9J3SWde/rQ4UhSiSZwlY+/vSwMUOINU2d8MbsFd
+         kqFD5q0dpPvNTbIpIv4RJMW1DvNs1NVI/YoZAqUCa8ouyZfBbgjO83pyWiU2Z8UAP5HX
+         TcB1isMuf2V4mLOSe0byOKPmXwIWJiffKIPlNEa7D3dOltehGNb3rN/9Vownr6Y7UaSJ
+         TWlmTv51oorynGf8lLAD+1f1szuKlOx39EdpKyY0OY9On8mPL7vPxzyCCaLHKwSwZHyD
+         9PSMFUzQso66vATGdnhzHNt1O+TNbzGttq0OGPpygnyX4575OwQS8zafDwVatKGVvA8C
+         JFxw==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816;
+        h=to:subject:message-id:date:from:mime-version:dkim-signature;
+        bh=Ks1bL8SmLKaKr4fZSvoGMliKXvzbdD6BwflX1JXs9Lc=;
+        b=THMw3O5LZ2b8IJO61xOwJYaCvl7jD7v75gFLu209GhRiniQCh+a5vtPeYnO4tVY8Ni
+         ze9S/XdVWY7WYpTfFn1oVT4wFZSoR1/HFBOi9FIWh256Quv3VXvZKRmYz6lfGE9SZZmR
+         JsMiNiIsVhglIb1F6njwv3mTTIEF9AaNI2IcxsIr6hzkZUCB/Z6OtY/dHtoT5QXbIGmX
+         B6d0BxNpXNuT/Jtg+I2gYfTSNhkWVCjjezJaRVP8cm0YgsyBEjLEgtBQS7NCwh0FE013
+         Cm/u0+TUHe0F4N8lO8WzPSy5TGl86z9kgoKZKk4iXt7ypOxJzGqhoXFLCzWS4l0no7YD
+         vx+Q==
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20161025 header.b=YXuwlnk6;
+       spf=pass (google.com: domain of kj0514537@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=kj0514537@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com
+Return-Path: <kj0514537@gmail.com>
+Received: from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])
+        by mx.google.com with SMTPS id t23sor558374ual.51.2020.05.05.22.35.20
+        for <jianglibo@gmail.com>
+        (Google Transport Security);
+        Tue, 05 May 2020 22:35:21 -0700 (PDT)
+Received-SPF: pass (google.com: domain of kj0514537@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20161025 header.b=YXuwlnk6;
+       spf=pass (google.com: domain of kj0514537@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=kj0514537@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20161025;
+        h=mime-version:from:date:message-id:subject:to;
+        bh=Ks1bL8SmLKaKr4fZSvoGMliKXvzbdD6BwflX1JXs9Lc=;
+        b=YXuwlnk6vRfWLPiy9TUtuezqyYeSYQ3ZV6pnAJy4R+xXa7sGJq2wHThIkISN/sJv1p
+         RZS1+bYCgQuYNUuBlKqrTezQ5QqNNVDtFKn1yD7RIeIOK9w2q0Q61W78awrL/laz1d0J
+         A9KXSeeOGDTFRVNCVjqYfDtZpoFgJDSn7Dlwfi88GTsFSLSC8iY+3sbIn0Bn2liaLGMi
+         lmaHdJLDXW+PZgFwo+1dqw3uUsWT0Qn5aqsBN6IoXzzGvkWlIR2QNoZLhWak9zfjub4d
+         vv9bHD2sxnMUUdnfbTsL332xw467+y/5xkX8vuD/0kki8JuIToJsjPXM5jpbTHtxxX9M
+         64Rg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:mime-version:from:date:message-id:subject:to;
+        bh=Ks1bL8SmLKaKr4fZSvoGMliKXvzbdD6BwflX1JXs9Lc=;
+        b=uhK09E76Nbz2IolNC23TIxPSqsnZs9/XIbtNECfgUHwC/w0/gFYKJ/pFOQeV3y7Pzq
+         j0yfVL+21GeawNoTmLj/9fnZhe+uPoz8h6YAFVnDYdceoQsRRKbB5yg7mR+iYCQGCDzU
+         LECVmCRucWnOmOR2uL6qqmNxlx01A9VMXYKrN9U9SqCvh852IycY0VtGGjVb7gJpb18j
+         CgrDKYVPgfucHWGEeIJetQqXib17dSFgFoklBiR1z92X1uHzuvIPsWkemKstl24Bx9Nu
+         iOpCrjAjKHoMRR9jXFQX9eb6q8LHE9kIHe8RYrI0Wpg+gSj4HyHA92d30cSN2W3OYe+W
+         Mqiw==
+X-Gm-Message-State: AGi0PuYfVNek2XnVzDnHMSL7CdexhvMzik85G1/KVKTDN5zBgByiPipc F/qYQ7+W8F0KDCnX5C9QpgoufDryWFr2H55C6NVhn59Q
+X-Google-Smtp-Source: APiQypI2Iw5eYo3VFAk9RizUth/SwBV4Ic7r3YSwO/xpZzzHpfb/Gr51z1/j6LLVOWQBQeX/xFqSfimrzuq41KGDGYc=
+X-Received: by 2002:ab0:7356:: with SMTP id k22mr5606719uap.122.1588743320242; Tue, 05 May 2020 22:35:20 -0700 (PDT)
+MIME-Version: 1.0
+From: "Dr. Kimberly James" <kj0514537@gmail.com>
+Date: Wed, 6 May 2020 08:35:07 +0300
+Message-ID: <CA+qxsBjjb5bz8QLNMny4WEMBYHmA_G7pQKaMDU-PpdSffUQJHQ@mail.gmail.com>
+Subject: Hi
+To: jianglibo@gmail.com
+Content-Type: multipart/alternative; boundary="0000000000003e0db505a4f421b5"
+
+--0000000000003e0db505a4f421b5
+Content-Type: text/plain; charset="UTF-8"
+
+Sending another to this.
+Kimberly
+
+--0000000000003e0db505a4f421b5
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"auto">Sending another to this.=C2=A0=C2=A0<div dir=3D"auto">Kim=
+berly=C2=A0</div></div>
+
+--0000000000003e0db505a4f421b5--

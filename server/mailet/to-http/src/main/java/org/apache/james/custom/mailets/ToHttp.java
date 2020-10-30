@@ -29,6 +29,7 @@ import java.util.HashSet;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -57,7 +58,13 @@ import org.slf4j.LoggerFactory;
 
 public class ToHttp extends GenericMailet {
 
-        private static final Logger LOGGER = LoggerFactory.getLogger(ToHttp.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ToHttp.class);
+
+    private ObjectMapper objectMapper = new ObjectMapper();
+
+    public ObjectMapper getObjectMapper() {
+        return objectMapper;
+    }
 
     /**
      * The name of the header to be added.
@@ -85,7 +92,7 @@ public class ToHttp extends GenericMailet {
                 url = new URL(targetUrl).toExternalForm();
             } catch (MalformedURLException e) {
                 throw new MessagingException(
-                        "Unable to contruct URL object from url");
+                        "Unable to construct URL object from url");
             }
         }
 
@@ -173,6 +180,12 @@ public class ToHttp extends GenericMailet {
                 pairs.add(new BasicNameValuePair("subject", message.getSubject()));
             }
             pairs.add(new BasicNameValuePair("size", Integer.toString(message.getSize())));
+            try {
+                Object c = message.getContent();
+                System.out.println(c.toString());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         pairs.add(new BasicNameValuePair(parameterKey, parameterValue));

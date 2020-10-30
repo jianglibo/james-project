@@ -19,14 +19,6 @@
 
 package org.apache.james.custom.mailets;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import javax.mail.MessagingException;
-
 import org.apache.http.ExceptionLogger;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
@@ -43,11 +35,15 @@ import org.apache.mailet.Mail;
 import org.apache.mailet.Mailet;
 import org.apache.mailet.base.test.FakeMailetConfig;
 import org.apache.mailet.base.test.MailUtil;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
+
+import javax.mail.MessagingException;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ToHTTPTest {
 
@@ -106,6 +102,30 @@ class ToHTTPTest {
     }
 
     @Test
+    void shouldParseGmail() throws MessagingException, IOException {
+        urlTestPattern = "/path/to/service/succeeded";
+        Mail mail = MailUtil.createMockMail2Recipients(MimeMessageUtil.mimeMessageFromStream(
+                ClassLoader.getSystemResourceAsStream("mime/gmail.mime")));
+
+        FakeMailetConfig mailetConfig = FakeMailetConfig.builder()
+                .setProperty("parameterKey", "pKey").setProperty("parameterValue", "pValue")
+                .setProperty("url", "http://" + server.getInetAddress().getHostAddress() + ":"
+                        + server.getLocalPort() + urlTestPattern)
+                .build();
+        ToHttp mailet = new ToHttp();
+        mailet.init(mailetConfig);
+
+        mailet.service(mail);
+
+        MyHandler handler = ParsedMail.parse(mail.getMessage());
+
+        String s = mailet.getObjectMapper().writeValueAsString(handler.getParsedHeaders());
+        String s1 = mailet.getObjectMapper().writeValueAsString(handler.getMailStringBody());
+        assertThat("a").hasSize(1);
+
+    }
+
+    @Test
     void shouldBeSucceededWhenServiceResponseIsOk() throws Exception {
         urlTestPattern = "/path/to/service/succeeded";
 
@@ -117,10 +137,38 @@ class ToHTTPTest {
 
         mapper.register(urlTestPattern, (request, response, context) -> response.setStatusCode(HttpStatus.SC_OK));
 
-        Mailet mailet = new ToHttp();
+        ToHttp mailet = new ToHttp();
         mailet.init(mailetConfig);
 
         mailet.service(mail);
+
+//        ByteArrayOutputStream out = new ByteArrayOutputStream();
+//            mail.getMessage().writeTo(out);
+//
+//            String s = out.toString("UTF-8");
+
+//        MimeMessageUtil.asString()
+
+//        ContentHandler handler = new SimpleContentHandler() {
+//            @Override
+//            public void headers(Header header) {
+//
+//            }
+//        };
+//        MimeConfig config = new MimeConfig();
+//        MimeStreamParser parser = new MimeStreamParser(config);
+//        parser.setContentHandler(handler);
+//        InputStream instream = new FileInputStream("mime.msg");
+//        try {
+//            parser.parse(instream);
+//        } finally {
+//            instream.close();
+//        }
+
+        MyHandler handler = ParsedMail.parse(mail.getMessage());
+
+        String s = mailet.getObjectMapper().writeValueAsString(handler.getParsedHeaders());
+        String s1 = mailet.getObjectMapper().writeValueAsString(handler.getMailStringBody());
 
         assertThat(mail.getMessage().getHeader("X-headerToHTTP"))
             .hasSize(1)

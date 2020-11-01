@@ -289,7 +289,7 @@
             regexp: (<mailet match="RecipientIsLocal" class="AddDeliveredToHeader"/>)
             replace: |
               \1
-              <mailet match="All" class="org.apache.james.custom.mailets.ToHttp">
+              <mailet match="RecipientIsLocal" class="org.apache.james.custom.mailets.ToHttp">
                 <url>{{ mail_trigger_url }}</url>
                 <passThrough>true</passThrough>
               </mailet>

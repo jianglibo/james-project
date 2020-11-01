@@ -19,7 +19,13 @@
 
 package org.apache.james.custom.mailets;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
+
 import org.apache.http.client.entity.EntityBuilder;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -32,11 +38,7 @@ import org.apache.mailet.base.GenericMailet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Serialise the email and pass it to an HTTP call
@@ -55,7 +57,7 @@ public class ToHttp extends GenericMailet {
 
   private ObjectMapper objectMapper = new ObjectMapper();
 
-//    private RequestBuilder requestBuilder;
+  //    private RequestBuilder requestBuilder;
 
   public ObjectMapper getObjectMapper() {
     return objectMapper;

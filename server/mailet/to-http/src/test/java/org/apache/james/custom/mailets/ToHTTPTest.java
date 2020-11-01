@@ -19,6 +19,12 @@
 
 package org.apache.james.custom.mailets;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import javax.mail.MessagingException;
+
 import org.apache.http.ExceptionLogger;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
@@ -37,11 +43,6 @@ import org.apache.mailet.Mailet;
 import org.apache.mailet.base.test.FakeMailetConfig;
 import org.apache.mailet.base.test.MailUtil;
 import org.junit.jupiter.api.*;
-
-import javax.mail.MessagingException;
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -94,10 +95,10 @@ class ToHTTPTest {
 
     mailet.service(mail);
 
-    assertThat(mail.getMessage().getHeader("X-headerToHTTP"))
+    assertThat(mail.getMessage().getHeader("X-toHTTP"))
             .hasSize(1)
             .allSatisfy((header) -> assertThat(header).isEqualTo("Failed"));
-    assertThat(mail.getMessage().getHeader("X-headerToHTTPFailure"))
+    assertThat(mail.getMessage().getHeader("X-toHTTPFailure"))
             .hasSize(1)
             .allSatisfy((header) -> assertThat(header).isNotBlank());
   }
@@ -141,7 +142,7 @@ class ToHTTPTest {
       if (request instanceof  BasicHttpEntityEnclosingRequest) {
         HttpEntity entity = ((BasicHttpEntityEnclosingRequest) request).getEntity();
         MailDto md = mailet.getObjectMapper().readValue(entity.getContent(), MailDto.class);
-        assertThat(md.getHeaders().get("reply_to")).isEqualTo("abc");
+        assertThat(md.getHeaders().get("reply_to")).isEqualTo("[aduprat <duprat@linagora.com>]");
       }
       response.setStatusCode(HttpStatus.SC_OK);
 
@@ -155,7 +156,7 @@ class ToHTTPTest {
 
     String s = mailet.getObjectMapper().writeValueAsString(mailDto);
 
-    assertThat(mail.getMessage().getHeader("X-headerToHTTP"))
+    assertThat(mail.getMessage().getHeader("X-toHTTP"))
             .hasSize(1)
             .allSatisfy((header) -> assertThat(header).isEqualTo("Succeeded"));
   }
@@ -229,7 +230,7 @@ class ToHTTPTest {
 
     mailet.service(mail);
 
-    assertThat(mail.getMessage().getHeader("X-headerToHTTP")).isNull();
+    assertThat(mail.getMessage().getHeader("X-toHTTP")).isNull();
 
     assertThat(mail.getState()).isEqualTo(Mail.GHOST);
   }
@@ -242,7 +243,7 @@ class ToHTTPTest {
 
     assertThatThrownBy(() -> new ToHttp().init(mailetConfig))
             .isExactlyInstanceOf(MessagingException.class)
-            .hasMessageContaining("Unable to contruct URL object from url");
+            .hasMessageContaining("Unable to construct URL object from url");
   }
 
   @Test

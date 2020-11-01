@@ -1,15 +1,16 @@
 package org.apache.james.custom.mailets;
 
-import org.apache.james.mime4j.stream.BodyDescriptor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
+
+import org.apache.james.mime4j.stream.BodyDescriptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The sender domain is what receiving email server sees when initiating the session.
@@ -31,7 +32,8 @@ public class MailDto {
     return mailStringBodies;
   }
 
-  public MailDto(){}
+  public MailDto() {
+  }
 
   public MailDto(MimeMessage message, List<MailStringBody> mailStringBodies) {
     this.mailStringBodies = mailStringBodies;
@@ -146,7 +148,8 @@ public class MailDto {
     private BodyDescriptorDto bodyDescriptor;
     private String body;
 
-    public MailStringBody(){}
+    public MailStringBody() {
+    }
 
     public MailStringBody(BodyDescriptor bodyDescriptor, String body) {
       this.bodyDescriptor = new BodyDescriptorDto(bodyDescriptor);

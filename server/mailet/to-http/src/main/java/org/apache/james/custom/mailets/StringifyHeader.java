@@ -1,10 +1,10 @@
 package org.apache.james.custom.mailets;
 
-import org.apache.james.mime4j.dom.Header;
-import org.apache.james.mime4j.stream.Field;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.james.mime4j.dom.Header;
+import org.apache.james.mime4j.stream.Field;
 
 public class StringifyHeader {
   private Map<String, String> itemMap;

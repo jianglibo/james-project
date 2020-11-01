@@ -1,21 +1,23 @@
 package org.apache.james.custom.mailets;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.james.mime4j.MimeException;
 import org.apache.james.mime4j.dom.Header;
 import org.apache.james.mime4j.message.SimpleContentHandler;
 import org.apache.james.mime4j.stream.BodyDescriptor;
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * All we need is MimeMessage's header and subject and bodies.
  */
 public class MyHandler extends SimpleContentHandler {
 
-//  private List<StringifyHeader> parsedHeaders;
+  //  private List<StringifyHeader> parsedHeaders;
   private List<MailDto.MailStringBody> mailStringBodies;
 
   private Header lastHeader;
@@ -24,31 +26,31 @@ public class MyHandler extends SimpleContentHandler {
     return mailStringBodies;
   }
 
-//  public List<StringifyHeader> getParsedHeaders() {
-//    return parsedHeaders;
-//  }
+  //  public List<StringifyHeader> getParsedHeaders() {
+  //    return parsedHeaders;
+  //  }
 
 
   public MyHandler() {
-//    parsedHeaders = new ArrayList<>();
+    //parsedHeaders = new ArrayList<>();
     mailStringBodies = new ArrayList<>();
   }
 
   @Override
   public void headers(Header header) {
     lastHeader = header;
-//    parsedHeaders.add(new StringifyHeader(header));
+    //    parsedHeaders.add(new StringifyHeader(header));
   }
 
-//  @Override
-//  public void startMultipart(BodyDescriptor bd) throws MimeException {
-//    super.startMultipart(bd);
-//  }
+  //  @Override
+  //  public void startMultipart(BodyDescriptor bd) throws MimeException {
+  //    super.startMultipart(bd);
+  //  }
 
-//  @Override
-//  public void endMultipart() throws MimeException {
-//    super.endMultipart();
-//  }
+  //  @Override
+  //  public void endMultipart() throws MimeException {
+  //    super.endMultipart();
+  //  }
 
   @Override
   public void body(BodyDescriptor bd, InputStream is) throws MimeException, IOException {

@@ -6,16 +6,16 @@
   # vars_files:
   #   - config.cfg
   #   - vars/sec.yml
-  # ansible-playbook --vault-id james@/opt/james.pwd  install-mail-server.yml 
+  # ansible-playbook --vault-id james@/opt/james.pwd  install-mail-server.yml
   vars:
     mail_ssl_secret: !vault |
-          $ANSIBLE_VAULT;1.2;AES256;james
-          62313637353138313962633931646333306633666634313630323234396231363737383865316162
-          6464646663323137366232666261346232613637303631360a353061303932653239616462626432
-          63316232623139333933306533313931613465636632656230306466383265306162346434653138
-          3530616237333735390a353130303962663231373038383831373234396131343038653162666436
-          61376532323738343637383630643932613134323566633864613532636163353330
-    dkim_rsa:  !vault |
+      $ANSIBLE_VAULT;1.2;AES256;james
+      62313637353138313962633931646333306633666634313630323234396231363737383865316162
+      6464646663323137366232666261346232613637303631360a353061303932653239616462626432
+      63316232623139333933306533313931613465636632656230306466383265306162346434653138
+      3530616237333735390a353130303962663231373038383831373234396131343038653162666436
+      61376532323738343637383630643932613134323566633864613532636163353330
+    dkim_rsa: !vault |
       $ANSIBLE_VAULT;1.2;AES256;james
       38613330663230636665333630333333316336336536613265323966366538303334383530383665
       6462336231376236643163336166333030363034396332650a316365326131326165653066306136
@@ -66,6 +66,24 @@
       30666638366333336536626437623533363966396137633265333364613737653632616535613066
       30313666333439373033323536356134343439326162303866656661336637613038376564353034
       3063
+    mail_trigger_url: !vault |
+      $ANSIBLE_VAULT;1.2;AES256;james
+      36323235336663366639636437326237346635383939343666343161663432313931366666656632
+      3131656337326339326236653965353235396463326264390a393630376135626262336430623366
+      32303866653061663162376534306334323033373765613636343337366666636666626333616362
+      3937636235323730630a396362656634323332643138303732393637383162336134353631383639
+      38313062393133383265626439306439383839376630383636653632326635373232396433323936
+      31373862336439396338396231643631623063346336633934343931346163373766613166386161
+      37393665343734646665643331383439653330363937643163636361336562343738323933376431
+      37303466656630623239303361393161323138646161366562303066303165616339376233643139
+      38356165396138663938376132366661626139306532343263653137356538303261633338323261
+      39333761313763373039353238633161336535643937323963633464653964373661653762623538
+      32383465663936326236656633353532643331633237373464343861613334653130623637663262
+      38616364333266663534303764396330613961663033656137346264383432663236663737393562
+      62396234323462336362363533303333336165333766393433363564656332376562633066633739
+      35643932323763376163386434613063366265353565366464626139373362366436373939393133
+      33336138346332346364306464366633333565643233383932343564373566356637316565386433
+      64353736626637373535
     mail_port: "25"
     app_zip_file: server/app/target/james-server-app-3.5.0-app.zip
     deploy_dir: /opt/james
@@ -106,7 +124,7 @@
       file:
         path: "{{ deploy_dir }}"
         state: directory
-        mode: '0755'
+        mode: "0755"
       when: inventory_hostname != "localhost"
     - name: Extract app.zip into current directory
       unarchive:
@@ -135,7 +153,7 @@
             path: "{{ keystore }}"
           register: keystore_result
         - name: generate key
-          command: "keytool -genkeypair -dname \"CN=Libo, OU=organizationUnit, O=organizationName, L=localityName,S=stateName, C=EE\" -alias james -keystore {{ keystore }} -keypass {{ mail_ssl_secret }} -storepass {{ mail_ssl_secret }}"
+          command: 'keytool -genkeypair -dname "CN=Libo, OU=organizationUnit, O=organizationName, L=localityName,S=stateName, C=EE" -alias james -keystore {{ keystore }} -keypass {{ mail_ssl_secret }} -storepass {{ mail_ssl_secret }}'
           # no_log: true
           when: keystore_result.stat.exists == false
       vars:
@@ -169,9 +187,18 @@
             regexp: "{{ item.regexp }}"
             line: "{{ item.line }}"
           with_items:
-            - { regexp: '<bind>0.0.0.0:143</bind>', line: '<bind>0.0.0.0:993</bind>' }
-            - { regexp: '<tls socketTLS="false" startTLS="false">', line: '<tls socketTLS="true" startTLS="false">' }
-            - { regexp: '<secret>yoursecret</secret>', line: "<secret>{{ mail_ssl_secret }}</secret>"}
+            - {
+                regexp: "<bind>0.0.0.0:143</bind>",
+                line: "<bind>0.0.0.0:993</bind>",
+              }
+            - {
+                regexp: '<tls socketTLS="false" startTLS="false">',
+                line: '<tls socketTLS="false" startTLS="true">',
+              }
+            - {
+                regexp: "<secret>yoursecret</secret>",
+                line: "<secret>{{ mail_ssl_secret }}</secret>",
+              }
       vars:
         iampserver_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/imapserver.xml' }}"
       no_log: true
@@ -183,8 +210,48 @@
             regexp: "{{ item.regexp }}"
             line: "{{ item.line }}"
           with_items:
-            - { regexp: '<tls socketTLS="false" startTLS="false">', line: '<tls socketTLS="true" startTLS="false">' }
-            - { regexp: '<secret>yoursecret</secret>', line: "<secret>{{ mail_ssl_secret }}</secret>"}
+            - {
+                regexp: '<tls socketTLS="false" startTLS="false">',
+                line: '<tls socketTLS="false" startTLS="true">',
+              }
+            - {
+                regexp: "<secret>yoursecret</secret>",
+                line: "<secret>{{ mail_ssl_secret }}</secret>",
+              }
+        - name: add 587
+          replace:
+            path: "{{ smtpserver_file }}"
+            regexp: (</smtpservers>)
+            replace: |
+              <smtpserver enabled="true">
+                <jmxName>smtpserver-authenticated</jmxName>
+                <bind>0.0.0.0:587</bind>
+                <connectionBacklog>200</connectionBacklog>
+                <tls socketTLS="false" startTLS="true">
+                    <keystore>file://conf/keystore</keystore>
+                    <secret>{{ mail_ssl_secret }}</secret>
+                    <provider>org.bouncycastle.jce.provider.BouncyCastleProvider</provider>
+                    <algorithm>SunX509</algorithm>
+                </tls>
+                <connectiontimeout>360</connectiontimeout>
+                <connectionLimit>0</connectionLimit>
+                <connectionLimitPerIP>0</connectionLimitPerIP>
+                <!--
+                  Authorize only local users
+                -->
+                <authRequired>true</authRequired>
+                <authorizedAddresses>0.0.0.0/0</authorizedAddresses>
+                <!-- Trust authenticated users -->
+                <verifyIdentity>false</verifyIdentity>
+                <maxmessagesize>0</maxmessagesize>
+                <addressBracketsEnforcement>true</addressBracketsEnforcement>
+                <smtpGreeting>JAMES Linagora's SMTP awesome Server</smtpGreeting>
+                <handlerchain>
+                    <handler class="org.apache.james.smtpserver.fastfail.ValidRcptHandler"/>
+                    <handler class="org.apache.james.smtpserver.CoreCmdHandlerLoader"/>
+                </handlerchain>
+              </smtpserver>
+              \1
       vars:
         smtpserver_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/smtpserver.xml' }}"
       no_log: true
@@ -201,9 +268,9 @@
               </domainnames>
       vars:
         domainlist_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/domainlist.xml' }}"
-    - name: insert dkim
+    - name: adjust mailetcontainer.xml
       block:
-        - name: change mailetcontainer.xml
+        - name: insert dkim
           replace:
             path: "{{ mailetcontainer_file }}"
             regexp: (<mailet match="All" class="RemoteDelivery">)
@@ -216,8 +283,51 @@
                 </privateKey>
               </mailet>
               \1
+        - name: insert tohttp mailet.
+          replace:
+            path: "{{ mailetcontainer_file }}"
+            regexp: (<mailet match="RecipientIsLocal" class="AddDeliveredToHeader"/>)
+            replace: |
+              \1
+              <mailet match="All" class="org.apache.james.custom.mailets.ToHttp">
+                <url>{{ mail_trigger_url }}</url>
+                <passThrough>true</passThrough>
+              </mailet>
+        - name: replace /var/mail dir.
+          replace:
+            path: "{{ mailetcontainer_file }}"
+            regexp: file://var/mail
+            replace: "file://{{ deploy_dir }}/var/mail"
+        - name: create mail directory
+          file:
+            path: "{{ deploy_dir }}/var/mail"
+            state: directory
+            mode: "0755"
       vars:
         mailetcontainer_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/mailetcontainer.xml'}}"
+    - name: create store directory
+      file:
+        path: "{{ deploy_dir }}/var/store/maildir"
+        state: directory
+        mode: "0755"
+    - name: adjust james-database.properties
+      block:
+        - name: change derby database path.
+          replace:
+            path: "{{ james_database_file }}"
+            regexp: database.url=jdbc:derby:../var/store/derby;create=true
+            replace: "database.url=jdbc:derby:{{ deploy_dir }}/var/store/derby;create=true"
+      vars:
+        james_database_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/james-database.properties'}}"
+    - name: adjust mailbox-maildir.properties
+      block:
+        - name: change maildir folder.
+          replace:
+            path: "{{ mailbox_maildir_file }}"
+            regexp: maildir.folder=../var/store/maildir/%domain/%user
+            replace: "maildir.folder={{ deploy_dir }}/var/store/maildir/%domain/%user"
+      vars:
+        mailbox_maildir_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/mailbox-maildir.properties'}}"
     # - name: change port to 465
     #   lineinfile:
     #     path: ansible-fixture/smtpserver.xml
@@ -236,7 +346,6 @@
     #     regexp: <secret>yoursecret</secret>
     #     line: "<secret>{{ mail_ssl_secret }}</secret>"
     #     backrefs: yes
-
 # 1603851017.resp._domainkey.resp.me:
 # v=DKIM1;p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC+uWiXndXhNu4FqrZbop+/PmK2PpIdQ+lts7w49bR3J5HKpBAaQDviUJyYmNVgrvx3FDldQ0mXZhAIDuVhR8bOo7H70B30gT7cCc6kdqD8kmVI7VXUOWVfDL+SEMPeka/4JOqdV8OdYyzOCYQLvQTlUI1gweMtJwBja/w9J5rO9wIDAQAB
 # :3600::

@@ -19,18 +19,7 @@
 
 package org.apache.james.custom.mailets;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Arrays;
-import java.util.HashSet;
-
-import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.EntityBuilder;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -38,21 +27,24 @@ import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.mailet.Mail;
 import org.apache.mailet.base.GenericMailet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 /**
  * Serialise the email and pass it to an HTTP call
  * <p>
  * Sample configuration:
  *
- * <mailet match="All" class="HeadersToHTTP">
+ * <mailet match="All" class="org.apache.james.custom.mailets.ToHTTP">
  * <url>http://192.168.0.252:3000/alarm</url>
- * <parameterKey>Test</parameterKey>
- * <parameterValue>ParameterValue</parameterValue>
  * <passThrough>true</passThrough>
  * </mailet>
  */
@@ -73,8 +65,6 @@ public class ToHttp extends GenericMailet {
    * The name of the header to be added.
    */
   private String url;
-  private String parameterKey = null;
-  private String parameterValue = null;
   private boolean passThrough = true;
 
   @Override
@@ -82,21 +72,14 @@ public class ToHttp extends GenericMailet {
 
     this.objectMapper = new ObjectMapper();
 
-//        requestBuilder = RequestBuilder.post(url).setHeader("Content-Type", "application/json");
-//        requestBuilder.setEntity()
-
     passThrough = (getInitParameter("passThrough", "true").compareToIgnoreCase("true") == 0);
     String targetUrl = getInitParameter("url");
-    parameterKey = getInitParameter("parameterKey");
-    parameterValue = getInitParameter("parameterValue");
 
     // Check if needed config values are used
     if (targetUrl == null || targetUrl.equals("")) {
       throw new MessagingException("Please configure a targetUrl (\"url\")");
     } else {
       try {
-        // targetUrl = targetUrl + ( targetUrl.contains("?") ? "&" :
-        // "?") + parameterKey + "=" + parameterValue;
         url = new URL(targetUrl).toExternalForm();
       } catch (MalformedURLException e) {
         throw new MessagingException(
@@ -109,7 +92,6 @@ public class ToHttp extends GenericMailet {
       LOGGER.debug("I will attempt to deliver serialised messages to "
               + targetUrl
               + ". "
-              + (((parameterKey == null) || (parameterKey.length() < 1)) ? "I will not add any fields to the post. " : "I will prepend: " + parameterKey + "=" + parameterValue + ". ")
               + (passThrough ? "Messages will pass through." : "Messages will be ghosted."));
     }
   }
@@ -125,7 +107,6 @@ public class ToHttp extends GenericMailet {
       LOGGER.debug("{} HeadersToHTTP: Starting", mail.getName());
       MimeMessage message = mail.getMessage();
       MailDto pairs = ParsedMail.parse(message);
-//            LOGGER.debug("{} HeadersToHTTP: {} named value pairs found", mail.getName(), pairs.size());
       String result = httpPost(pairs);
       if (passThrough) {
         addHeader(mail, true, result);
@@ -141,9 +122,9 @@ public class ToHttp extends GenericMailet {
   private void addHeader(Mail mail, boolean success, String errorMessage) {
     try {
       MimeMessage message = mail.getMessage();
-      message.setHeader("X-headerToHTTP", (success ? "Succeeded" : "Failed"));
+      message.setHeader("X-toHTTP", (success ? "Succeeded" : "Failed"));
       if (!success && errorMessage != null && errorMessage.length() > 0) {
-        message.setHeader("X-headerToHTTPFailure", errorMessage);
+        message.setHeader("X-toHTTPFailure", errorMessage);
       }
       message.saveChanges();
     } catch (MessagingException e) {
@@ -169,7 +150,7 @@ public class ToHttp extends GenericMailet {
 
   @Override
   public String getMailetInfo() {
-    return "HTTP POST serialised message";
+    return "HTTP POST json message";
   }
 
 

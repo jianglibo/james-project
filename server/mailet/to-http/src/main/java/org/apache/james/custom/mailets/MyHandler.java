@@ -3,9 +3,11 @@ package org.apache.james.custom.mailets;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+
+import javax.mail.internet.ContentType;
 
 import org.apache.james.mime4j.dom.Header;
 import org.apache.james.mime4j.message.SimpleContentHandler;
@@ -21,13 +23,18 @@ public class MyHandler extends SimpleContentHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(MyHandler.class);
   private final List<MailDto.MailStringBody> mailStringBodies;
 
+  private final Optional<ContentType> ctOp;
+
   public List<MailDto.MailStringBody> getMailStringBodies() {
     return mailStringBodies;
   }
 
-  public MyHandler() {
+
+  public MyHandler(ContentType ct) {
+    this.ctOp = Optional.ofNullable(ct);
     mailStringBodies = new ArrayList<>();
   }
+
 
   @Override
   public void headers(Header header) {
@@ -44,8 +51,15 @@ public class MyHandler extends SimpleContentHandler {
 
       buffer.flush();
       byte[] byteArray = buffer.toByteArray();
+      String charset = ctOp.map(ct -> {
+        String c = ct.getParameter("charset");
+        if (c == null) {
+          c = ct.getParameter("CHARSET");
+        }
+        return c;
+      }).orElse("UTF_8");
 
-      String text = new String(byteArray, StandardCharsets.UTF_8);
+      String text = new String(byteArray, charset);
 
       mailStringBodies.add(new MailDto.MailStringBody(bd, text));
     }

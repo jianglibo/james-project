@@ -1,10 +1,10 @@
 package org.apache.james.custom.mailets;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.mail.Address;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 
@@ -22,6 +22,12 @@ public class MailDto {
   private Map<String, String> headers = new HashMap<>();
   private List<MailStringBody> mailStringBodies;
 
+  public Addresses getAddresses() {
+    return addresses;
+  }
+
+  private Addresses addresses;
+
   public Map<String, String> getHeaders() {
     return headers;
   }
@@ -37,19 +43,20 @@ public class MailDto {
 
   public MailDto(MimeMessage message, List<MailStringBody> mailStringBodies) {
     this.mailStringBodies = mailStringBodies;
+    this.addresses = new Addresses();
     if (message != null) {
       try {
         if (message.getSender() != null) {
-          headers.put("sender", message.getSender().toString());
+          addresses.setSender(message.getSender());
         }
         if (message.getFrom() != null) {
-          headers.put("from", Arrays.toString(message.getFrom()));
+          addresses.setFrom(message.getFrom());
         }
         if (message.getReplyTo() != null) {
-          headers.put("reply_to", Arrays.toString(message.getReplyTo()));
+          addresses.setReplyTo(message.getReplyTo());
         }
         if (message.getAllRecipients() != null) {
-          headers.put("all_recipients", Arrays.toString(message.getAllRecipients()));
+          addresses.setAllRecipients(message.getAllRecipients());
         }
         if (message.getMessageID() != null) {
           headers.put("message_id", message.getMessageID());
@@ -61,6 +68,45 @@ public class MailDto {
       } catch (MessagingException e) {
         LOGGER.error("get message header failed.", e);
       }
+    }
+  }
+
+  public static class Addresses {
+    private Address sender;
+    private Address[] from;
+    private Address[] replyTo;
+    private Address[] allRecipients;
+
+    public Address getSender() {
+      return sender;
+    }
+
+    public void setSender(Address sender) {
+      this.sender = sender;
+    }
+
+    public Address[] getFrom() {
+      return from;
+    }
+
+    public void setFrom(Address[] from) {
+      this.from = from;
+    }
+
+    public Address[] getReplyTo() {
+      return replyTo;
+    }
+
+    public void setReplyTo(Address[] replyTo) {
+      this.replyTo = replyTo;
+    }
+
+    public Address[] getAllRecipients() {
+      return allRecipients;
+    }
+
+    public void setAllRecipients(Address[] allRecipients) {
+      this.allRecipients = allRecipients;
     }
   }
 

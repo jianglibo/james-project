@@ -44,6 +44,9 @@ import org.apache.mailet.base.test.FakeMailetConfig;
 import org.apache.mailet.base.test.MailUtil;
 import org.junit.jupiter.api.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -121,7 +124,10 @@ class ToHTTPTest {
 
     MailDto mailDto = ParsedMail.parse(mail.getMessage());
 
-    String s = mailet.getObjectMapper().writeValueAsString(mailDto);
+    ObjectMapper om = new ObjectMapper();
+    om.enable(SerializationFeature.INDENT_OUTPUT);
+
+    String s = om.writeValueAsString(mailDto);
     assertThat("a").hasSize(1);
 
   }

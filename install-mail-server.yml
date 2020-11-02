@@ -2,12 +2,12 @@
 - name: install james mail server in target server.
   # gather_facts: false
   gather_facts: true
+  # hosts: localhost
   hosts: mail-server
   # vars_files:
   #   - config.cfg
   #   - vars/sec.yml
   # ansible-playbook --vault-id james@/opt/james.pwd  install-mail-server.yml
-  # ansible-playbook mail-server --vault-id james@/opt/james.pwd  install-mail-server.yml
   vars:
     mail_ssl_secret: !vault |
       $ANSIBLE_VAULT;1.2;AES256;james
@@ -328,6 +328,13 @@
             path: "{{ mailetcontainer_file }}"
             regexp: file://var/mail
             replace: "file://{{ deploy_dir }}/var/mail"
+        - name: remove RemoteAddrNotInNetwork block
+          replace:
+            path: "{{ mailetcontainer_file }}"
+            after: <!-- should\) disable this matcher/mailet pair. -->
+            before: <!-- Attempt remote delivery using the specified repository for the spool, -->
+            regexp: '(^.+$)'
+            replace: '<!-- \1 -->'
         - name: create mail directory
           file:
             path: "{{ deploy_dir }}/var/mail"

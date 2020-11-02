@@ -57,8 +57,7 @@ public class MyHandler extends SimpleContentHandler {
           c = ct.getParameter("CHARSET");
         }
         return c;
-      }).orElse("UTF_8");
-
+      }).orElse("UTF-8");
       String text = new String(byteArray, charset);
 
       mailStringBodies.add(new MailDto.MailStringBody(bd, text));

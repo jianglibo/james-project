@@ -7,53 +7,34 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.james.mime4j.MimeException;
 import org.apache.james.mime4j.dom.Header;
 import org.apache.james.mime4j.message.SimpleContentHandler;
 import org.apache.james.mime4j.stream.BodyDescriptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * All we need is MimeMessage's header and subject and bodies.
  */
 public class MyHandler extends SimpleContentHandler {
 
-  //  private List<StringifyHeader> parsedHeaders;
-  private List<MailDto.MailStringBody> mailStringBodies;
-
-  private Header lastHeader;
+  private static final Logger LOGGER = LoggerFactory.getLogger(MyHandler.class);
+  private final List<MailDto.MailStringBody> mailStringBodies;
 
   public List<MailDto.MailStringBody> getMailStringBodies() {
     return mailStringBodies;
   }
 
-  //  public List<StringifyHeader> getParsedHeaders() {
-  //    return parsedHeaders;
-  //  }
-
-
   public MyHandler() {
-    //parsedHeaders = new ArrayList<>();
     mailStringBodies = new ArrayList<>();
   }
 
   @Override
   public void headers(Header header) {
-    lastHeader = header;
-    //    parsedHeaders.add(new StringifyHeader(header));
   }
 
-  //  @Override
-  //  public void startMultipart(BodyDescriptor bd) throws MimeException {
-  //    super.startMultipart(bd);
-  //  }
-
-  //  @Override
-  //  public void endMultipart() throws MimeException {
-  //    super.endMultipart();
-  //  }
-
   @Override
-  public void body(BodyDescriptor bd, InputStream is) throws MimeException, IOException {
+  public void body(BodyDescriptor bd, InputStream is) throws IOException {
     try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
       int nRead;
       byte[] data = new byte[1024];
@@ -67,7 +48,6 @@ public class MyHandler extends SimpleContentHandler {
       String text = new String(byteArray, StandardCharsets.UTF_8);
 
       mailStringBodies.add(new MailDto.MailStringBody(bd, text));
-
     }
   }
 }

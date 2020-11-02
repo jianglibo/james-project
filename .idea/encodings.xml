@@ -178,6 +178,7 @@
     <file url="file://$PROJECT_DIR$/server/mailet/mailets/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/server/mailet/mock-smtp-server/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/server/mailet/to-http/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/server/mailet/to-http/src/test/resources/mime/chinese.eml" charset="windows-1252" />
     <file url="file://$PROJECT_DIR$/server/mailrepository/mailrepository-api/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/server/mailrepository/mailrepository-cassandra/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/server/mailrepository/mailrepository-memory/src/main/java" charset="UTF-8" />

@@ -31,4 +31,34 @@ class ParsedMailTest {
 
     assertThat("a").hasSize(1);
   }
+
+
+  @Test
+  void tJapanese() throws MessagingException, IOException {
+    MimeMessage mm = MimeMessageUtil.mimeMessageFromStream(
+//            ClassLoader.getSystemResourceAsStream("mime/sendToRemoteHttp.mime"));
+            ClassLoader.getSystemResourceAsStream("mime/japanese.mime"));
+    MailDto mailDto = ParsedMail.parse(mm);
+
+    assertThat("a").hasSize(1);
+  }
+  @Test
+  void tJapaneseShift() throws MessagingException, IOException {
+    MimeMessage mm = MimeMessageUtil.mimeMessageFromStream(
+//            ClassLoader.getSystemResourceAsStream("mime/sendToRemoteHttp.mime"));
+            ClassLoader.getSystemResourceAsStream("mime/japanese_shift_js.mime"));
+    MailDto mailDto = ParsedMail.parse(mm);
+
+    assertThat("a").hasSize(1);
+  }
+
+  @Test
+  void tChinese() throws MessagingException, IOException {
+    MimeMessage mm = MimeMessageUtil.mimeMessageFromStream(
+//            ClassLoader.getSystemResourceAsStream("mime/sendToRemoteHttp.mime"));
+            ClassLoader.getSystemResourceAsStream("mime/chinese.eml"));
+    MailDto mailDto = ParsedMail.parse(mm);
+
+    assertThat("a").hasSize(1);
+  }
 }

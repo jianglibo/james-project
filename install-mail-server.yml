@@ -2,11 +2,12 @@
 - name: install james mail server in target server.
   # gather_facts: false
   gather_facts: true
-  hosts: localhost
+  hosts: mail-server
   # vars_files:
   #   - config.cfg
   #   - vars/sec.yml
   # ansible-playbook --vault-id james@/opt/james.pwd  install-mail-server.yml
+  # ansible-playbook mail-server --vault-id james@/opt/james.pwd  install-mail-server.yml
   vars:
     mail_ssl_secret: !vault |
       $ANSIBLE_VAULT;1.2;AES256;james
@@ -88,6 +89,7 @@
     app_zip_file: server/app/target/james-server-app-3.5.0-app.zip
     deploy_dir: /opt/james
     app_folder_name: james-server-app-3.5.0
+    is_remote: "{{ inventory_hostname != 'localhost' }}"
   tasks:
     - name: os environment
       debug:
@@ -116,6 +118,8 @@
               - unzip
               # - openjdk-8-jdk-headless
               - openjdk-8-jre-headless
+              - python3-pip
+            update_cache: "{{ 'yes' if ansible_facts['distribution_major_version'] | int >= 20 else 'no' }}"
         - name: Install pexpect python package
           pip:
             name: pexpect
@@ -130,6 +134,7 @@
       unarchive:
         src: "{{ app_zip_file }}"
         dest: "{{ deploy_dir }}"
+        remote_src: "{{ is_remote }}"
     - name: adjust firewall.
       block:
         - name: Deny everything and enable UFW
@@ -140,10 +145,20 @@
           community.general.ufw:
             rule: allow
             name: OpenSSH
-        - name: Allow all access to tcp port 465
+        - name: Allow all access to mail port
           community.general.ufw:
             rule: allow
             port: "{{ mail_port }}"
+            proto: tcp
+        - name: Allow all access to 587 port
+          community.general.ufw:
+            rule: allow
+            port: "587"
+            proto: tcp
+        - name: Allow all access to 993 port
+          community.general.ufw:
+            rule: allow
+            port: "993"
             proto: tcp
       when: inventory_hostname != "localhost"
     - name: generate key if not exists.
@@ -266,6 +281,21 @@
               <domainnames>
                 <domainname>resp.me</domainname>
               </domainnames>
+        - name: disable auto detect.
+          replace:
+            path: "{{ domainlist_file }}"
+            regexp: <autodetect>true</autodetect>
+            replace: <autodetect>false</autodetect>
+        - name: disable auto detect.
+          replace:
+            path: "{{ domainlist_file }}"
+            regexp: <autodetectIP>true</autodetectIP>
+            replace: <autodetectIP>false</autodetectIP>
+        - name: remove default domain.
+          replace:
+            path: "{{ domainlist_file }}"
+            regexp: <defaultDomain>localhost</defaultDomain>
+            replace: <defaultDomain>resp.me</defaultDomain>
       vars:
         domainlist_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/domainlist.xml' }}"
     - name: adjust mailetcontainer.xml
@@ -277,7 +307,7 @@
             replace: |
               <mailet match="All" class="org.apache.james.jdkim.mailets.ConvertTo7Bit"/>
               <mailet match="All" class="org.apache.james.jdkim.mailets.DKIMSign">
-                <signatureTemplate>v=1; s=1603851017.resp; d=resp.me; h=from:to:received:received; a=rsa-sha256; bh=; b=;</signatureTemplate>
+                <signatureTemplate>v=1; s=1603851017.resp; d=resp.me; h=From:To:Message-ID:Subject:MIME-Version:Content-Type; a=rsa-sha256; bh=; b=;</signatureTemplate>
                 <privateKey>
                   {{ dkim_rsa }}
                 </privateKey>

@@ -1,0 +1,9 @@
+[local]
+localhost ansible_connection=local ansible_python_interpreter=python3
+
+[mail-server]
+# ansible t-server -a "ls" --ask-pass
+# to use the 'ssh' connection type with passwords, you must install the sshpass program
+# apt -y install sshpass
+# ansible t-server -m setup --ask-pass
+resp.me ansible_user=root

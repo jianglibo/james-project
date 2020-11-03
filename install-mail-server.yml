@@ -168,7 +168,7 @@
             path: "{{ keystore }}"
           register: keystore_result
         - name: generate key
-          command: 'keytool -genkeypair -dname "CN=Libo, OU=organizationUnit, O=organizationName, L=localityName,S=stateName, C=EE" -alias james -keystore {{ keystore }} -keypass {{ mail_ssl_secret }} -storepass {{ mail_ssl_secret }}'
+          command: 'keytool -genkeypair -dname "CN=resp.me, OU=organizationUnit, O=organizationName, L=localityName,S=stateName, C=EE" -alias james -keystore {{ keystore }} -keypass {{ mail_ssl_secret }} -storepass {{ mail_ssl_secret }}'
           # no_log: true
           when: keystore_result.stat.exists == false
       vars:
@@ -365,24 +365,27 @@
             replace: "maildir.folder={{ deploy_dir }}/var/store/maildir/%domain/%user"
       vars:
         mailbox_maildir_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/mailbox-maildir.properties'}}"
-    # - name: change port to 465
-    #   lineinfile:
-    #     path: ansible-fixture/smtpserver.xml
-    #     regexp: <bind>0.0.0.0:25</bind>
-    #     line: <bind>0.0.0.0:465</bind>
-    #     backrefs: yes
-    # - name: enable tls.
-    #   lineinfile:
-    #     path: ansible-fixture/smtpserver.xml
-    #     regexp: <tls socketTLS="false" startTLS="false">
-    #     line: <tls socketTLS="true" startTLS="true">
-    #     backrefs: yes
-    # - name: set secret.
-    #   lineinfile:
-    #     path: ansible-fixture/smtpserver.xml
-    #     regexp: <secret>yoursecret</secret>
-    #     line: "<secret>{{ mail_ssl_secret }}</secret>"
-    #     backrefs: yes
-# 1603851017.resp._domainkey.resp.me:
-# v=DKIM1;p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC+uWiXndXhNu4FqrZbop+/PmK2PpIdQ+lts7w49bR3J5HKpBAaQDviUJyYmNVgrvx3FDldQ0mXZhAIDuVhR8bOo7H70B30gT7cCc6kdqD8kmVI7VXUOWVfDL+SEMPeka/4JOqdV8OdYyzOCYQLvQTlUI1gweMtJwBja/w9J5rO9wIDAQAB
-# :3600::
+    - name: adjust wrapper.conf file
+      block:
+        - name: change wrapper.conf with lineinfile
+          lineinfile:
+            path: "{{ wrapper_conf_file }}"
+            regexp: "{{ item.regexp }}"
+            line: "{{ item.line }}"
+          with_items:
+            - {
+                regexp: wrapper.logfile.maxsize=0,
+                line: wrapper.logfile.maxsize=10m,
+              }
+            - {
+                regexp: wrapper.logfile.maxfiles=0,
+                line: wrapper.logfile.maxfiles=20,
+              }
+      vars:
+        wrapper_conf_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/wrapper.conf'}}"
+
+# cat /etc/letsencrypt/live/resp.me/*.pem > temp.pem
+# openssl pkcs12 -export -out temp.pkcs12 -in temp.pem -passin pass: -passout pass:
+# keytool -genkey -keyalg RSA -alias tempalias -keystore keystore.ks -storepass 123456 -keypass 123456 -dname "CN=resp.me, OU=organizationUnit, O=organizationName, L=localityName,S=stateName, C=EE"
+# keytool -delete -alias tempalias -keystore keystore.ks -storepass 123456
+# keytool -v -importkeystore -srckeystore temp.pkcs12 -destkeystore keystore.ks -deststoretype JKS -storepass 123456 -srcstorepass ""

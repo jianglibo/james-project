@@ -193,13 +193,19 @@ public class MailDto {
   public static class MailStringBody {
     private BodyDescriptorDto bodyDescriptor;
     private String body;
+    private String charset;
+
+    public String getCharset() {
+      return charset;
+    }
 
     public MailStringBody() {
     }
 
-    public MailStringBody(BodyDescriptor bodyDescriptor, String body) {
+    public MailStringBody(BodyDescriptor bodyDescriptor, String body, String charset) {
       this.bodyDescriptor = new BodyDescriptorDto(bodyDescriptor);
       this.body = body;
+      this.charset = charset;
     }
 
     public BodyDescriptorDto getBodyDescriptor() {

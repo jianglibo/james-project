@@ -51,16 +51,21 @@ public class MyHandler extends SimpleContentHandler {
 
       buffer.flush();
       byte[] byteArray = buffer.toByteArray();
-      String charset = ctOp.map(ct -> {
-        String c = ct.getParameter("charset");
-        if (c == null) {
-          c = ct.getParameter("CHARSET");
-        }
-        return c;
-      }).orElse("UTF-8");
+
+      String charset = bd.getCharset();
+      if (charset == null || "us-ascii".equalsIgnoreCase(charset)) {
+        charset = ctOp.map(ct -> {
+          String c = ct.getParameter("charset");
+          if (c == null) {
+            c = ct.getParameter("CHARSET");
+          }
+          return c;
+        }).orElse("UTF-8");
+      }
+
       String text = new String(byteArray, charset);
 
-      mailStringBodies.add(new MailDto.MailStringBody(bd, text));
+      mailStringBodies.add(new MailDto.MailStringBody(bd, text, charset));
     }
   }
 }

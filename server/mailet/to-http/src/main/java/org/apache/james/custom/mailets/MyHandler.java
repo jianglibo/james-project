@@ -65,7 +65,7 @@ public class MyHandler extends SimpleContentHandler {
 
       String text = new String(byteArray, charset);
 
-      mailStringBodies.add(new MailDto.MailStringBody(bd, text, charset));
+      mailStringBodies.add(new MailDto.MailStringBody(bd, text, ctOp.map(ct -> ct.getParameter("charset")).orElse("null")));
     }
   }
 }

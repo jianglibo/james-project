@@ -168,7 +168,7 @@
             path: "{{ keystore }}"
           register: keystore_result
         - name: generate key
-          command: 'keytool -genkeypair -dname "CN=resp.me, OU=organizationUnit, O=organizationName, L=localityName,S=stateName, C=EE" -alias james -keystore {{ keystore }} -keypass {{ mail_ssl_secret }} -storepass {{ mail_ssl_secret }}'
+          command: 'keytool -genkeypair -dname "CN=resp.me, OU=organizationUnit, O=organizationName, L=localityName,S=stateName, C=EE" -alias james -keystore {{ keystore }} -keypass {{ mail_ssl_secret }} -storepass {{ mail_ssl_secret }} -storetype jks'
           # no_log: true
           when: keystore_result.stat.exists == false
       vars:

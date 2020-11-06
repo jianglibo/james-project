@@ -7,3 +7,8 @@ dockerfiles/run/**/glowroot
 .m2
 test-run.log
 build
+james-server-app-3.5.0/
+**/.settings/*
+**/.project
+**/.classpath
+**/.factorypath

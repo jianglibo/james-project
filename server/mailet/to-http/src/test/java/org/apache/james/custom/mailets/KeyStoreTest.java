@@ -48,6 +48,7 @@ public class KeyStoreTest {
 
   }
 
+  //   mvn -Dtest=TestCi*le test --file server/mailet/to-http/pom.xml
   @Test
   public void tls() {
         SSLContext context = null;

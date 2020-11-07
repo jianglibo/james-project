@@ -222,10 +222,10 @@
             regexp: "{{ item.regexp }}"
             line: "{{ item.line }}"
           with_items:
-            - {
-                regexp: '<tls socketTLS="false" startTLS="false">',
-                line: '<tls socketTLS="false" startTLS="true">',
-              }
+            # - {
+            #     regexp: '<tls socketTLS="false" startTLS="false">',
+            #     line: '<tls socketTLS="false" startTLS="true">',
+            #   }
             - {
                 regexp: "<secret>yoursecret</secret>",
                 line: "<secret>{{ mail_ssl_secret }}</secret>",

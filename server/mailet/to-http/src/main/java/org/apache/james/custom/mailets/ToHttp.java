@@ -79,7 +79,8 @@ public class ToHttp extends GenericMailet {
     if (qttl != null) {
       try {
         qttli = Integer.parseInt(qttl);
-      } catch (Exception ignored) {
+      } catch (Exception e) {
+        LOGGER.info("Invalid queueTimeToLive init parameter");
       }
     }
     queueTimeToLive = Duration.ofHours(qttli);
@@ -156,11 +157,11 @@ public class ToHttp extends GenericMailet {
   }
 
   private void sendMessage(MailDto mailDto) throws JsonProcessingException, ServiceBusException, InterruptedException {
-//    final String messageId = Integer.toString(i);
+    //    final String messageId = Integer.toString(i);
     Message message = new Message(objectMapper.writeValueAsBytes(mailDto));
     message.setContentType(queueContentType);
     message.setLabel(queueLabel);
-//    message.setMessageId(messageId);
+    //    message.setMessageId(messageId);
     message.setTimeToLive(queueTimeToLive);
     sendClient.send(message);
   }
@@ -185,42 +186,5 @@ public class ToHttp extends GenericMailet {
   public String getMailetInfo() {
     return "HTTP POST json message";
   }
-
-
-//      public class Sender {
-//        public void run() throws Exception {
-//            // Create a QueueClient instance and then asynchronously send messages.
-//            // Close the sender once the send operation is complete.
-//            QueueClient sendClient = new QueueClient(new ConnectionStringBuilder(servicebusConn), ReceiveMode.PEEKLOCK);
-//            this.sendMessagesAsync(sendClient).thenRunAsync(() -> {
-//                System.out.println("i'm here.");
-//                sendClient.closeAsync();
-//            }).get();
-//            Thread.sleep(1000);
-//            sendClient.close();
-//        }
-//
-//        CompletableFuture<Void> sendMessagesAsync(QueueClient sendClient) throws JsonProcessingException {
-//            List<MailDto> data = List.of(mailDto);
-//
-//
-//            List<CompletableFuture> tasks = new ArrayList<>();
-//            for (int i = 0; i < data.size(); i++) {
-//                final String messageId = Integer.toString(i);
-//                Message message = new Message(objectMapper.writeValueAsBytes(mailDto));
-//                message.setContentType(appConfig.getQueueContentType());
-//                message.setLabel(appConfig.getQueueLabel());
-//                message.setMessageId(messageId);
-//                message.setTimeToLive(appConfig.getQueueTimeToLive());
-//                System.out.printf("\nMessage sending: Id = %s", message.getMessageId());
-//                tasks.add(
-//                        sendClient.sendAsync(message).thenRunAsync(() -> {
-//                            System.out.printf("\n\tMessage acknowledged: Id = %s", message.getMessageId());
-//                        }));
-//            }
-//            return CompletableFuture.allOf(tasks.toArray(new CompletableFuture<?>[tasks.size()]));
-//        }
-//    }
-
 
 }

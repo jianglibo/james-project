@@ -20,11 +20,15 @@
 package org.apache.james.custom.mailets;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.http.client.entity.EntityBuilder;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -37,8 +41,7 @@ import org.apache.mailet.Mail;
 import org.apache.mailet.base.GenericMailet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.microsoft.azure.servicebus.QueueClient;
 
 /**
  * Serialise the email and pass it to an HTTP call
@@ -46,7 +49,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Sample configuration:
  *
  * <mailet match="All" class="org.apache.james.custom.mailets.ToHTTP">
- * <url>http://192.168.0.252:3000/alarm</url>
+ * <servicebusConn>Endpoint=sb://xxx</servicebusConn>
  * <passThrough>true</passThrough>
  * </mailet>
  */
@@ -66,7 +69,7 @@ public class ToHttp extends GenericMailet {
   /**
    * The name of the header to be added.
    */
-  private String url;
+  private String servicebusConn;
   private boolean passThrough = true;
 
   @Override
@@ -75,24 +78,17 @@ public class ToHttp extends GenericMailet {
     this.objectMapper = new ObjectMapper();
 
     passThrough = (getInitParameter("passThrough", "true").compareToIgnoreCase("true") == 0);
-    String targetUrl = getInitParameter("url");
+    servicebusConn = getInitParameter("servicebusConn");
 
     // Check if needed config values are used
-    if (targetUrl == null || targetUrl.equals("")) {
+    if (servicebusConn == null || servicebusConn.equals("")) {
       throw new MessagingException("Please configure a targetUrl (\"url\")");
-    } else {
-      try {
-        url = new URL(targetUrl).toExternalForm();
-      } catch (MalformedURLException e) {
-        throw new MessagingException(
-                "Unable to construct URL object from url");
-      }
     }
 
     // record the result
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("I will attempt to deliver serialised messages to "
-              + targetUrl
+              + servicebusConn
               + ". "
               + (passThrough ? "Messages will pass through." : "Messages will be ghosted."));
     }
@@ -121,6 +117,11 @@ public class ToHttp extends GenericMailet {
     }
   }
 
+  @Override
+  public void destroy() {
+    super.destroy();
+  }
+
   private void addHeader(Mail mail, boolean success, String errorMessage) {
     try {
       MimeMessage message = mail.getMessage();
@@ -135,18 +136,18 @@ public class ToHttp extends GenericMailet {
   }
 
 
-  private String httpPost(MailDto pairs) throws IOException {
-    String body = objectMapper.writeValueAsString(pairs);
+  // private String httpPost(MailDto pairs) throws IOException {
+  //   String body = objectMapper.writeValueAsString(pairs);
 
-    try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
-      HttpUriRequest request = RequestBuilder.post(url)
-              .setEntity(EntityBuilder.create().setText(body).setContentType(ContentType.APPLICATION_JSON).build()).build();
-      try (CloseableHttpResponse clientResponse = client.execute(request)) {
-        String result = clientResponse.getStatusLine().getStatusCode() + ": " + clientResponse.getStatusLine();
-        LOGGER.debug("HeadersToHTTP: {}", result);
-        return result;
-      }
-    }
+  //   try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
+  //     HttpUriRequest request = RequestBuilder.post(url)
+  //             .setEntity(EntityBuilder.create().setText(body).setContentType(ContentType.APPLICATION_JSON).build()).build();
+  //     try (CloseableHttpResponse clientResponse = client.execute(request)) {
+  //       String result = clientResponse.getStatusLine().getStatusCode() + ": " + clientResponse.getStatusLine();
+  //       LOGGER.debug("HeadersToHTTP: {}", result);
+  //       return result;
+  //     }
+  //   }
   }
 
 
@@ -154,6 +155,43 @@ public class ToHttp extends GenericMailet {
   public String getMailetInfo() {
     return "HTTP POST json message";
   }
+
+
+      public class Sender {
+        public void run() throws Exception {
+            // Create a QueueClient instance and then asynchronously send messages.
+            // Close the sender once the send operation is complete.
+            QueueClient sendClient = new QueueClient(new ConnectionStringBuilder(servicebusConn), ReceiveMode.PEEKLOCK);
+            this.sendMessagesAsync(sendClient).thenRunAsync(() -> {
+                System.out.println("i'm here.");
+                sendClient.closeAsync();
+            }).get();
+            Thread.sleep(1000);
+            sendClient.close();
+        }
+
+        CompletableFuture<Void> sendMessagesAsync(QueueClient sendClient) throws JsonProcessingException {
+            List<MailDto> data = List.of(mailDto);
+
+
+            List<CompletableFuture> tasks = new ArrayList<>();
+            for (int i = 0; i < data.size(); i++) {
+                final String messageId = Integer.toString(i);
+                Message message = new Message(objectMapper.writeValueAsBytes(mailDto));
+                message.setContentType(appConfig.getQueueContentType());
+                message.setLabel(appConfig.getQueueLabel());
+                message.setMessageId(messageId);
+                message.setTimeToLive(appConfig.getQueueTimeToLive());
+                System.out.printf("\nMessage sending: Id = %s", message.getMessageId());
+                tasks.add(
+                        sendClient.sendAsync(message).thenRunAsync(() -> {
+                            System.out.printf("\n\tMessage acknowledged: Id = %s", message.getMessageId());
+                        }));
+            }
+            return CompletableFuture.allOf(tasks.toArray(new CompletableFuture<?>[tasks.size()]));
+        }
+    }
+
 
 
 }

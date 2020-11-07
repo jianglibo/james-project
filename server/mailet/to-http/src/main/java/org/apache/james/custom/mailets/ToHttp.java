@@ -20,28 +20,23 @@
 package org.apache.james.custom.mailets;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.time.Duration;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.apache.http.client.entity.EntityBuilder;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.methods.RequestBuilder;
-import org.apache.http.entity.ContentType;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.mailet.Mail;
 import org.apache.mailet.base.GenericMailet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.microsoft.azure.servicebus.Message;
 import com.microsoft.azure.servicebus.QueueClient;
+import com.microsoft.azure.servicebus.ReceiveMode;
+import com.microsoft.azure.servicebus.primitives.ConnectionStringBuilder;
+import com.microsoft.azure.servicebus.primitives.ServiceBusException;
 
 /**
  * Serialise the email and pass it to an HTTP call
@@ -60,17 +55,15 @@ public class ToHttp extends GenericMailet {
 
   private ObjectMapper objectMapper = new ObjectMapper();
 
-  //    private RequestBuilder requestBuilder;
-
   public ObjectMapper getObjectMapper() {
     return objectMapper;
   }
 
-  /**
-   * The name of the header to be added.
-   */
-  private String servicebusConn;
   private boolean passThrough = true;
+  private QueueClient sendClient = null;
+  private String queueLabel;
+  private String queueContentType;
+  private Duration queueTimeToLive;
 
   @Override
   public void init() throws MessagingException {
@@ -78,13 +71,33 @@ public class ToHttp extends GenericMailet {
     this.objectMapper = new ObjectMapper();
 
     passThrough = (getInitParameter("passThrough", "true").compareToIgnoreCase("true") == 0);
-    servicebusConn = getInitParameter("servicebusConn");
+    String servicebusConn = getInitParameter("servicebusConn");
+    queueContentType = getInitParameter("queueContentType", "application/json");
+    queueLabel = getInitParameter("queueLabel", "mailDto");
+    String qttl = getInitParameter("queueTimeToLive");
+    int qttli = 12;
+    if (qttl != null) {
+      try {
+        qttli = Integer.parseInt(qttl);
+      } catch (Exception ignored) {
+      }
+    }
+    queueTimeToLive = Duration.ofHours(qttli);
 
     // Check if needed config values are used
     if (servicebusConn == null || servicebusConn.equals("")) {
-      throw new MessagingException("Please configure a targetUrl (\"url\")");
+      throw new MessagingException("Please configure a targetUrl (\"servicebusConn\")");
     }
 
+    try {
+      sendClient = new QueueClient(new ConnectionStringBuilder(servicebusConn), ReceiveMode.PEEKLOCK);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+      throw new MessagingException("InterruptedException from QueueClient.");
+    } catch (ServiceBusException e) {
+      e.printStackTrace();
+      throw new MessagingException("ServiceBusException from QueueClient.");
+    }
     // record the result
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("I will attempt to deliver serialised messages to "
@@ -104,22 +117,29 @@ public class ToHttp extends GenericMailet {
     try {
       LOGGER.debug("{} HeadersToHTTP: Starting", mail.getName());
       MimeMessage message = mail.getMessage();
-      MailDto pairs = ParsedMail.parse(message);
-      String result = httpPost(pairs);
+      MailDto mailDto = ParsedMail.parse(message);
+      sendMessage(mailDto);
       if (passThrough) {
-        addHeader(mail, true, result);
+        addHeader(mail, true, "true");
       } else {
         mail.setState(Mail.GHOST);
       }
     } catch (MessagingException | IOException e) {
       LOGGER.error("Exception", e);
       addHeader(mail, false, e.getMessage());
+    } catch (InterruptedException | ServiceBusException e) {
+      LOGGER.error("from servicebus", e);
     }
   }
 
   @Override
   public void destroy() {
     super.destroy();
+    try {
+      sendClient.close();
+    } catch (ServiceBusException e) {
+      e.printStackTrace();
+    }
   }
 
   private void addHeader(Mail mail, boolean success, String errorMessage) {
@@ -135,6 +155,16 @@ public class ToHttp extends GenericMailet {
     }
   }
 
+  private void sendMessage(MailDto mailDto) throws JsonProcessingException, ServiceBusException, InterruptedException {
+//    final String messageId = Integer.toString(i);
+    Message message = new Message(objectMapper.writeValueAsBytes(mailDto));
+    message.setContentType(queueContentType);
+    message.setLabel(queueLabel);
+//    message.setMessageId(messageId);
+    message.setTimeToLive(queueTimeToLive);
+    sendClient.send(message);
+  }
+
 
   // private String httpPost(MailDto pairs) throws IOException {
   //   String body = objectMapper.writeValueAsString(pairs);
@@ -148,7 +178,7 @@ public class ToHttp extends GenericMailet {
   //       return result;
   //     }
   //   }
-  }
+  //  }
 
 
   @Override
@@ -157,41 +187,40 @@ public class ToHttp extends GenericMailet {
   }
 
 
-      public class Sender {
-        public void run() throws Exception {
-            // Create a QueueClient instance and then asynchronously send messages.
-            // Close the sender once the send operation is complete.
-            QueueClient sendClient = new QueueClient(new ConnectionStringBuilder(servicebusConn), ReceiveMode.PEEKLOCK);
-            this.sendMessagesAsync(sendClient).thenRunAsync(() -> {
-                System.out.println("i'm here.");
-                sendClient.closeAsync();
-            }).get();
-            Thread.sleep(1000);
-            sendClient.close();
-        }
-
-        CompletableFuture<Void> sendMessagesAsync(QueueClient sendClient) throws JsonProcessingException {
-            List<MailDto> data = List.of(mailDto);
-
-
-            List<CompletableFuture> tasks = new ArrayList<>();
-            for (int i = 0; i < data.size(); i++) {
-                final String messageId = Integer.toString(i);
-                Message message = new Message(objectMapper.writeValueAsBytes(mailDto));
-                message.setContentType(appConfig.getQueueContentType());
-                message.setLabel(appConfig.getQueueLabel());
-                message.setMessageId(messageId);
-                message.setTimeToLive(appConfig.getQueueTimeToLive());
-                System.out.printf("\nMessage sending: Id = %s", message.getMessageId());
-                tasks.add(
-                        sendClient.sendAsync(message).thenRunAsync(() -> {
-                            System.out.printf("\n\tMessage acknowledged: Id = %s", message.getMessageId());
-                        }));
-            }
-            return CompletableFuture.allOf(tasks.toArray(new CompletableFuture<?>[tasks.size()]));
-        }
-    }
-
+//      public class Sender {
+//        public void run() throws Exception {
+//            // Create a QueueClient instance and then asynchronously send messages.
+//            // Close the sender once the send operation is complete.
+//            QueueClient sendClient = new QueueClient(new ConnectionStringBuilder(servicebusConn), ReceiveMode.PEEKLOCK);
+//            this.sendMessagesAsync(sendClient).thenRunAsync(() -> {
+//                System.out.println("i'm here.");
+//                sendClient.closeAsync();
+//            }).get();
+//            Thread.sleep(1000);
+//            sendClient.close();
+//        }
+//
+//        CompletableFuture<Void> sendMessagesAsync(QueueClient sendClient) throws JsonProcessingException {
+//            List<MailDto> data = List.of(mailDto);
+//
+//
+//            List<CompletableFuture> tasks = new ArrayList<>();
+//            for (int i = 0; i < data.size(); i++) {
+//                final String messageId = Integer.toString(i);
+//                Message message = new Message(objectMapper.writeValueAsBytes(mailDto));
+//                message.setContentType(appConfig.getQueueContentType());
+//                message.setLabel(appConfig.getQueueLabel());
+//                message.setMessageId(messageId);
+//                message.setTimeToLive(appConfig.getQueueTimeToLive());
+//                System.out.printf("\nMessage sending: Id = %s", message.getMessageId());
+//                tasks.add(
+//                        sendClient.sendAsync(message).thenRunAsync(() -> {
+//                            System.out.printf("\n\tMessage acknowledged: Id = %s", message.getMessageId());
+//                        }));
+//            }
+//            return CompletableFuture.allOf(tasks.toArray(new CompletableFuture<?>[tasks.size()]));
+//        }
+//    }
 
 
 }

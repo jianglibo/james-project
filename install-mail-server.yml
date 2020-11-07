@@ -318,7 +318,7 @@
               \1
               <mailet match="RecipientIsLocal" class="org.apache.james.custom.mailets.ToHttp">
                 <servicebusConn>{{ servicebus_conn }}</servicebusConn>
-                <passThrough>true</passThrough>
+                <passThrough>false</passThrough>
               </mailet>
         - name: replace /var/mail dir.
           replace:

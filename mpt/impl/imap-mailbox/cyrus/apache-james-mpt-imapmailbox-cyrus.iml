@@ -9,6 +9,8 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Maven: org.bouncycastle:bcpkix-jdk15on:1.67" level="project" />
+    <orderEntry type="library" name="Maven: org.bouncycastle:bcprov-jdk15on:1.67" level="project" />
     <orderEntry type="module" module-name="apache-james-mpt-imapmailbox-core" scope="TEST" />
     <orderEntry type="module" module-name="apache-james-mailbox-api" scope="TEST" />
     <orderEntry type="module" module-name="james-core" scope="TEST" />
@@ -120,8 +122,8 @@
     <orderEntry type="library" name="Maven: com.github.jnr:jnr-enxio:0.16" level="project" />
     <orderEntry type="library" name="Maven: com.github.jnr:jnr-posix:3.0.35" level="project" />
     <orderEntry type="library" name="Maven: commons-lang:commons-lang:2.6" level="project" />
-    <orderEntry type="library" name="Maven: org.bouncycastle:bcpkix-jdk15on:1.67" level="project" />
-    <orderEntry type="library" name="Maven: org.bouncycastle:bcprov-jdk15on:1.67" level="project" />
+    <orderEntry type="library" name="Maven: org.bouncycastle:bcpkix-jdk15on:1.62" level="project" />
+    <orderEntry type="library" name="Maven: org.bouncycastle:bcprov-jdk15on:1.62" level="project" />
     <orderEntry type="library" name="Maven: com.google.guava:guava:20.0" level="project" />
   </component>
 </module>

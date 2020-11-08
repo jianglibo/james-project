@@ -113,8 +113,7 @@
             pkg:
               - expect
               - unzip
-              # - openjdk-8-jdk-headless
-              - openjdk-8-jre-headless
+              - openjdk-11-jre-headless
               - python3-pip
             update_cache: "{{ 'yes' if ansible_facts['distribution_major_version'] | int >= 20 else 'no' }}"
         - name: Install pexpect python package
@@ -191,7 +190,12 @@
     #   no_log: true
     #   vars:
     #     keystore: "{{ deploy_dir + '/' + app_folder_name + '/conf/keystore' }}"
-    - name: adjuest imapserver.xml
+    - name: stop james
+      shell: ./james stop
+      args:
+        chdir: "{{ deploy_dir + '/' + app_folder_name + '/bin' }}"
+
+    - name: adjust imapserver.xml
       block:
         - name: change port to 993 and enable tls
           lineinfile:
@@ -380,6 +384,11 @@
               }
       vars:
         wrapper_conf_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/wrapper.conf'}}"
+
+    - name: start james
+      shell: ./james start
+      args:
+        chdir: "{{ deploy_dir + '/' + app_folder_name + '/bin' }}"
 # cat /etc/letsencrypt/live/resp.me/*.pem > temp.pem
 # openssl pkcs12 -export -out temp.pkcs12 -in temp.pem -passin pass: -passout pass:
 # keytool -genkey -keyalg RSA -alias tempalias -keystore keystore.ks -storepass 123456 -keypass 123456 -dname "CN=resp.me, OU=organizationUnit, O=organizationName, L=localityName,S=stateName, C=EE"

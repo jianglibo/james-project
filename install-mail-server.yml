@@ -336,6 +336,13 @@
             before: <!-- Attempt remote delivery using the specified repository for the spool, -->
             regexp: "(^.+$)"
             replace: '<!-- \1 -->'
+        - name: disable sent folder copy.
+          replace:
+            path: "{{ mailetcontainer_file }}"
+            after: <!-- Place a copy in the user Sent folder -->
+            before: <!-- Is the recipient is for a local account, deliver it locally -->
+            regexp: "(^.+$)"
+            replace: '<!-- \1 -->'
         - name: create mail directory
           file:
             path: "{{ deploy_dir }}/var/mail"

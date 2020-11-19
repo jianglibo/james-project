@@ -82,6 +82,14 @@
       30363633653765326333373635316161393064386131383761636662643935616162303264636665
       38623831343734643135353131666334386131343534386431313039373430326537323431623139
       65333132653335343836366539353934663262643264613033363066666632396230
+    db_password: !vault |
+      $ANSIBLE_VAULT;1.2;AES256;james
+      30336333386539386233336636666130326637353435636362616233633861663335626162363439
+      3564326235623635643434663663613762623433363338370a393866396439623063653963653962
+      63333539326262373634386635383234343538393461656430373432646234626130613236386232
+      3030653431343434620a323630326565383561633534343066396532613636353565303737313738
+      38303437616535616537376539383837373132623937303862336530623333386631
+    db_url: jdbc:postgresql://10.0.0.4/maildb
     mail_port: "25"
     app_zip_file: server/app/target/james-server-app-3.5.0-app.zip
     deploy_dir: /opt/james
@@ -355,15 +363,15 @@
         path: "{{ deploy_dir }}/var/store/maildir"
         state: directory
         mode: "0755"
-    - name: adjust james-database.properties
-      block:
-        - name: change derby database path.
-          replace:
-            path: "{{ james_database_file }}"
-            regexp: database.url=jdbc:derby:../var/store/derby;create=true
-            replace: "database.url=jdbc:derby:{{ deploy_dir }}/var/store/derby;create=true"
-      vars:
-        james_database_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/james-database.properties'}}"
+    # - name: adjust james-database.properties
+    #   block:
+    #     - name: change derby database path.
+    #       replace:
+    #         path: "{{ james_database_file }}"
+    #         regexp: database.url=jdbc:derby:../var/store/derby;create=true
+    #         replace: "database.url=jdbc:derby:{{ deploy_dir }}/var/store/derby;create=true"
+    #   vars:
+    #     james_database_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/james-database.properties'}}"
     - name: adjust mailbox-maildir.properties
       block:
         - name: change maildir folder.
@@ -373,6 +381,37 @@
             replace: "maildir.folder={{ deploy_dir }}/var/store/maildir/%domain/%user"
       vars:
         mailbox_maildir_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/mailbox-maildir.properties'}}"
+    - name: adjust james-database.properties file.
+      block:
+        - name: adjust jdbc
+          lineinfile:
+            path: "{{ db_properties_file }}"
+            regexp: "{{ item.regexp }}"
+            line: "{{ item.line }}"
+          with_items:
+            - {
+                regexp: database.driverClassName=org.apache.derby.jdbc.EmbeddedDriver,
+                line: database.driverClassName=org.postgresql.Driver,
+              }
+            - {
+                regexp: database.url=jdbc:derby:../var/store/derby;create=true,
+                line: "database.url={{ db_url }}",
+              }
+            - {
+                regexp: database.username=app,
+                line: database.username=postgres,
+              }
+            - {
+                regexp: database.password=app,
+                line: "database.password={{ db_password }}",
+              }
+            - {
+                regexp: vendorAdapter.database=DERBY,
+                line: vendorAdapter.database=POSTGRESQL,
+              }
+      vars:
+        db_properties_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/james-database.properties'}}"
+
     - name: adjust wrapper.conf file
       block:
         - name: change wrapper.conf with lineinfile

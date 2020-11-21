@@ -202,7 +202,6 @@
       shell: ./james stop
       args:
         chdir: "{{ deploy_dir + '/' + app_folder_name + '/bin' }}"
-
     - name: adjust imapserver.xml
       block:
         - name: change port to 993 and enable tls
@@ -381,6 +380,15 @@
             replace: "maildir.folder={{ deploy_dir }}/var/store/maildir/%domain/%user"
       vars:
         mailbox_maildir_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/mailbox-maildir.properties'}}"
+    - name: adjust usersrepository.xml
+      block:
+        - name: change maildir folder.
+          replace:
+            path: "{{ users_repository_file }}"
+            regexp: <algorithm>MD5</algorithm>
+            replace: <algorithm>SHA-512</algorithm>
+      vars:
+        users_repository_file: "{{ deploy_dir + '/' + app_folder_name + '/conf/usersrepository.xml'}}"
     - name: adjust james-database.properties file.
       block:
         - name: adjust jdbc
@@ -394,7 +402,7 @@
                 line: database.driverClassName=org.postgresql.Driver,
               }
             - {
-                regexp: database.url=jdbc:derby:../var/store/derby;create=true,
+                regexp: "database.url=jdbc:derby:../var/store/derby;create=true",
                 line: "database.url={{ db_url }}",
               }
             - {

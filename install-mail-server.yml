@@ -7,6 +7,8 @@
   # vars_files:
   #   - config.cfg
   #   - vars/sec.yml
+  # mvn install -DskipTests --fail-at-end
+  # mvn package -DskipTests --file server/app/pom.xml
   # ansible-playbook --vault-id james@/opt/james.pwd  install-mail-server.yml
   vars:
     mail_ssl_secret: !vault |
